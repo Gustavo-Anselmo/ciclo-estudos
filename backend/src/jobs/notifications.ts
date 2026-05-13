@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import path from 'path'
-import cron from 'node-cron'
+import * as cron from 'node-cron'
 import { askGroq } from '../lib/groqClient.js'
 import { getAuthenticatedCalendar } from '../lib/tokenStore.js'
 
