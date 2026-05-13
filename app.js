@@ -307,14 +307,14 @@ function renderDashboard() {
   const nameEl    = document.getElementById('current-subject-name');
   const nextList  = document.getElementById('next-list');
   const cycleEl   = document.getElementById('cycle-indicator');
-  const todayStats = document.getElementById('today-stats');
+  const todayList = document.getElementById('today-list');
 
   if (!state.subjects.length && studyingConstant === null) {
     nameEl.textContent = 'Nenhuma matéria cadastrada';
     nameEl.className = 'subject-name empty';
     nextList.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:4px 0">—</div>';
     cycleEl.innerHTML = '';
-    todayStats.innerHTML = '<div style="font-size:11px;color:var(--text-dim)">—</div>';
+    if (todayList) todayList.innerHTML = '<div style="font-size:12px;color:var(--text-dim)">Nenhuma sessão hoje</div>';
     renderConstantDashboard(); renderGoalProgress();
     return;
   }
@@ -342,16 +342,12 @@ function renderDashboard() {
     bySubject[s.subject] = (bySubject[s.subject] || 0) + s.duration;
   });
   const entries = Object.entries(bySubject).sort((a, b) => b[1] - a[1]);
-  const maxTime = entries.length ? entries[0][1] : 1;
 
-  if (todayStats) todayStats.innerHTML = !entries.length
-    ? '<div style="font-size:11px;color:var(--text-dim)">Nenhuma sessão hoje</div>'
-    : entries.map(([name, time]) => `
-      <div class="stat-row">
-        <span class="stat-subject">${name}</span>
-        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(time/maxTime*100)}%;background:${subjectColor(name)}"></div></div>
-        <span class="stat-time">${formatShort(time)}</span>
-      </div>`).join('');
+  if (todayList) todayList.innerHTML = !entries.length
+    ? '<div style="font-size:12px;color:var(--text-dim)">Nenhuma sessão hoje</div>'
+    : entries.map(([name, time]) =>
+        `<div style="font-size:12px;color:var(--text-muted);padding:3px 0">${name} — ${formatShort(time)}</div>`
+      ).join('');
 
   renderConstantDashboard(); renderGoalProgress();
 }
