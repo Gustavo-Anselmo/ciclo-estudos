@@ -9,8 +9,7 @@ function requireEnv(name: string): string {
 
 export const env = {
   PORT: Number(process.env.PORT) || 3000,
-  SESSION_SECRET:
-    process.env.SESSION_SECRET ?? 'ciclo-estudos-dev-secret-at-least-32-chars',
+  SESSION_SECRET: requireEnv('SESSION_SECRET'),
   GROQ_API_KEY: requireEnv('GROQ_API_KEY'),
   GOOGLE_CLIENT_ID: requireEnv('GOOGLE_CLIENT_ID'),
   GOOGLE_CLIENT_SECRET: requireEnv('GOOGLE_CLIENT_SECRET'),

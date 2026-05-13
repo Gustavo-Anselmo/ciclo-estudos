@@ -35,7 +35,7 @@ await app.register(fastifyCookie)
 
 await app.register(fastifySession, {
   secret: env.SESSION_SECRET,
-  cookie: { secure: false, httpOnly: true },
+  cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true },
   saveUninitialized: false,
 })
 
