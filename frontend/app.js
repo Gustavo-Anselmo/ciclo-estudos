@@ -1,6 +1,6 @@
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
-  : 'https://SEU-PROJETO.onrender.com'
+  : 'https://ciclo-estudos-api.onrender.com'
 
 // ── FETCH WITH TIMEOUT ──
 // timeoutMs: hard abort (default 35s covers Render cold start ~30s)
