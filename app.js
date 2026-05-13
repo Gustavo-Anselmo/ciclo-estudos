@@ -1,0 +1,1217 @@
+const API_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:3000'
+  : 'https://SEU-PROJETO.onrender.com'
+
+// ── FETCH WITH TIMEOUT ──
+// timeoutMs: hard abort (default 35s covers Render cold start ~30s)
+// onSlow: callback fired after 5s to show "connecting..." UI
+async function fetchWithTimeout(url, options = {}, timeoutMs = 35000, onSlow) {
+  const ac = new AbortController()
+  const abortTimer = setTimeout(() => ac.abort(), timeoutMs)
+  let slowTimer
+  if (onSlow) slowTimer = setTimeout(onSlow, 5000)
+  try {
+    const res = await fetch(url, { ...options, signal: ac.signal })
+    return res
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error('REQUEST_TIMEOUT')
+    throw err
+  } finally {
+    clearTimeout(abortTimer)
+    clearTimeout(slowTimer)
+  }
+}
+
+// ── CLOCK ──
+function updateClock() {
+  const el = document.getElementById('clock-badge');
+  if (el) el.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── SUBJECT HELPERS (string | {name, dailyGoal}) ──
+const COLORS = ['#4d9fff','#a78bfa','#fb923c','#34d399','#f472b6','#2dd4bf','#fbbf24','#f87171','#60a5fa','#c084fc'];
+function subjectColor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return COLORS[Math.abs(h) % COLORS.length];
+}
+function subjectInitial(name) { return name.trim()[0]?.toUpperCase() || '?'; }
+function sName(s) { return typeof s === 'string' ? s : (s.name || ''); }
+function sGoal(s) { return typeof s === 'string' ? 0 : (s.dailyGoal || 0); }
+
+// ── STATE ──
+let state = { subjects: [], currentIndex: 0, sessions: [], constantSubjects: [] };
+let timerInterval   = null;
+let timerSeconds    = 0;
+let timerRunning    = false;
+let sessionStart    = null;
+let pauseInterval   = null;
+let pauseSeconds    = 0;
+let studyingConstant = null;
+let dragSrcIdx      = null;
+
+// ── POMODORO STATE ──
+let pomoActive       = false;
+let pomoPhase        = 'focus';   // 'focus' | 'break'
+let pomoSecondsLeft  = 0;
+let pomoFocusSecs    = 0;         // accumulated focus time in current session
+let pomoBreakInterval = null;
+
+// ── PERSIST ──
+function save() { localStorage.setItem('study-cycle', JSON.stringify(state)); }
+function load() {
+  const raw = localStorage.getItem('study-cycle');
+  if (raw) { try { state = JSON.parse(raw); } catch(e) {} }
+  if (!state.constantSubjects) state.constantSubjects = [];
+  // Normalize subjects: strings → {name, dailyGoal}
+  state.subjects = state.subjects.map(s => typeof s === 'string' ? { name: s, dailyGoal: 0 } : s);
+}
+
+// ── AUDIO / VIBRATION ──
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.4);
+  } catch(e) {}
+}
+function doVibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
+
+// ── SIDEBAR DOTS ──
+function updateSidebarDot() {
+  const cls = timerRunning ? 'nav-dot running' : timerSeconds > 0 ? 'nav-dot paused' : 'nav-dot';
+  document.querySelectorAll('.nav-dot').forEach(d => { d.className = cls; });
+}
+
+// ── POMODORO ──
+function onPomoToggle() {
+  pomoActive = document.getElementById('pomo-toggle').checked;
+  document.getElementById('pomo-config').classList.toggle('visible', pomoActive);
+  if (!pomoActive) {
+    document.getElementById('pomo-block-bar').style.display = 'none';
+    if (!timerRunning && timerSeconds === 0) { pomoPhase = 'focus'; pomoSecondsLeft = 0; pomoFocusSecs = 0; }
+  }
+}
+function getPomoFocusSecs() { return (parseInt(document.getElementById('pomo-focus')?.value) || 25) * 60; }
+function getPomoBreakSecs() { return (parseInt(document.getElementById('pomo-break')?.value) || 5) * 60; }
+
+function updatePomoBadge() {
+  const b = document.getElementById('pomo-phase-badge');
+  if (!b) return;
+  b.textContent = pomoPhase === 'focus' ? 'Foco' : 'Pausa';
+  b.className = 'pomo-phase-badge ' + (pomoPhase === 'focus' ? 'pomo-phase-focus' : 'pomo-phase-break');
+}
+
+function updatePomoBar() {
+  const total   = pomoPhase === 'focus' ? getPomoFocusSecs() : getPomoBreakSecs();
+  const elapsed = total - pomoSecondsLeft;
+  const pct     = Math.min(100, Math.round(elapsed / total * 100));
+  const fill    = document.getElementById('pomo-bar-fill');
+  if (!fill) return;
+  fill.style.width      = pct + '%';
+  fill.style.background = pomoPhase === 'break' ? 'var(--green)' : 'var(--accent)';
+}
+
+function onPomoFocusEnd() {
+  // Called from within timerInterval — safe to clear here
+  clearInterval(timerInterval); timerInterval = null;
+  timerRunning = false;
+  playBeep(); doVibrate([200, 100, 200]);
+  showToast('Bloco concluído! Pausa de ' + Math.round(getPomoBreakSecs() / 60) + ' min');
+
+  pomoPhase = 'break';
+  pomoSecondsLeft = getPomoBreakSecs();
+  updatePomoBadge(); updatePomoBar();
+
+  document.getElementById('timer-display').textContent = formatTime(pomoSecondsLeft);
+  document.getElementById('timer-display').className = 'timer-time paused';
+  document.getElementById('timer-status').textContent = 'pausa pomodoro';
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-pause').disabled = true;
+  document.getElementById('timer-card').classList.remove('running');
+  updateSidebarDot();
+
+  if (pomoBreakInterval) clearInterval(pomoBreakInterval);
+  pomoBreakInterval = setInterval(() => {
+    pomoSecondsLeft--;
+    updatePomoBar();
+    document.getElementById('timer-display').textContent = formatTime(Math.max(0, pomoSecondsLeft));
+    if (pomoSecondsLeft <= 0) {
+      clearInterval(pomoBreakInterval); pomoBreakInterval = null;
+      playBeep(); doVibrate([200]);
+      showToast('Hora de voltar!');
+      pomoPhase = 'focus';
+      pomoSecondsLeft = getPomoFocusSecs();
+      updatePomoBadge(); updatePomoBar();
+      document.getElementById('timer-display').textContent = formatTime(pomoSecondsLeft);
+      document.getElementById('timer-display').className = 'timer-time';
+      document.getElementById('timer-status').textContent = 'pronto';
+      document.getElementById('btn-start').disabled = false;
+    }
+  }, 1000);
+}
+
+// ── TIMER ──
+function startTimer() {
+  if (!studyingConstant && !state.subjects.length) { showToast('Adicione matérias primeiro'); showView('subjects'); return; }
+  if (pauseInterval) { clearInterval(pauseInterval); pauseInterval = null; }
+  sessionStart = sessionStart || new Date().toISOString();
+
+  if (pomoActive && timerSeconds === 0) {
+    pomoPhase = 'focus';
+    pomoSecondsLeft = getPomoFocusSecs();
+    pomoFocusSecs = 0;
+    document.getElementById('pomo-block-bar').style.display = '';
+    updatePomoBadge();
+  }
+
+  timerRunning = true;
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    if (pomoActive && pomoPhase === 'focus') {
+      pomoFocusSecs++;
+      pomoSecondsLeft--;
+      updatePomoBar();
+      if (pomoSecondsLeft <= 0) { onPomoFocusEnd(); return; }
+    }
+    updateTimerDisplay();
+    renderGoalProgress();
+  }, 1000);
+
+  document.getElementById('btn-start').disabled  = true;
+  document.getElementById('btn-pause').disabled  = false;
+  document.getElementById('btn-finish').disabled = false;
+  document.getElementById('timer-display').className = 'timer-time running';
+  document.getElementById('timer-status').textContent = pomoActive ? 'foco' : 'em andamento';
+  document.getElementById('timer-card').classList.add('running');
+  updatePauseDisplay();
+  updateSidebarDot();
+}
+
+function pauseTimer() {
+  if (!timerRunning) return;
+  clearInterval(timerInterval); timerInterval = null;
+  timerRunning = false;
+  pauseInterval = setInterval(() => { pauseSeconds++; updatePauseDisplay(); }, 1000);
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-pause').disabled = true;
+  document.getElementById('timer-display').className = 'timer-time paused';
+  document.getElementById('timer-status').textContent = 'pausado';
+  document.getElementById('timer-card').classList.remove('running');
+  updateSidebarDot();
+}
+
+function finishSession() {
+  if (!timerRunning && timerSeconds === 0) return;
+  const subjectName = studyingConstant !== null ? studyingConstant : sName(state.subjects[state.currentIndex]);
+  const isConstant  = studyingConstant !== null;
+  const duration    = (pomoActive && pomoFocusSecs > 0) ? pomoFocusSecs : timerSeconds;
+  if (duration === 0) { showToast('Tempo insuficiente para registrar'); return; }
+
+  const pauseInfo  = pauseSeconds > 0 ? ` e <strong>${formatShort(pauseSeconds)}</strong> de pausa` : '';
+  const advanceInfo = isConstant ? '' : ' e avançar para a próxima matéria';
+
+  showModal({
+    icon: '✅', title: 'Finalizar sessão?',
+    desc: `Salvar <strong>${formatTime(duration)}</strong> de estudo${pauseInfo} em <strong>${subjectName}</strong>${advanceInfo}?`,
+    confirmLabel: 'Finalizar',
+    onConfirm: () => {
+      clearInterval(timerInterval); clearInterval(pauseInterval); clearInterval(pomoBreakInterval);
+      timerInterval = null; pauseInterval = null; pomoBreakInterval = null;
+      timerRunning = false;
+
+      state.sessions.unshift({ subject: subjectName, start: sessionStart, end: new Date().toISOString(), duration, pauseDuration: pauseSeconds });
+      if (!isConstant && state.subjects.length > 0) state.currentIndex = (state.currentIndex + 1) % state.subjects.length;
+      studyingConstant = null;
+      save();
+
+      playBeep(); doVibrate([200, 100, 200]);
+      showToast(`${subjectName} — ${formatTime(duration)} registrado`);
+
+      timerSeconds = 0; pauseSeconds = 0; sessionStart = null;
+      pomoFocusSecs = 0; pomoPhase = 'focus'; pomoSecondsLeft = 0;
+      document.getElementById('pomo-block-bar').style.display = 'none';
+      if (document.getElementById('pomo-bar-fill')) document.getElementById('pomo-bar-fill').style.width = '0%';
+      updatePomoBadge();
+
+      document.getElementById('btn-start').disabled  = false;
+      document.getElementById('btn-pause').disabled  = true;
+      document.getElementById('btn-finish').disabled = true;
+      document.getElementById('timer-display').className = 'timer-time';
+      document.getElementById('timer-status').textContent = 'parado';
+      document.getElementById('timer-card').classList.remove('running');
+      updateTimerDisplay(); updatePauseDisplay(); updateSidebarDot();
+      renderGoalProgress(); renderDashboard();
+    }
+  });
+}
+
+function updateTimerDisplay() {
+  const val = (pomoActive && pomoPhase === 'focus' && pomoSecondsLeft > 0)
+    ? formatTime(pomoSecondsLeft)
+    : formatTime(timerSeconds);
+  document.getElementById('timer-display').textContent = val;
+}
+
+function updatePauseDisplay() {
+  const el = document.getElementById('pause-display');
+  if (!el) return;
+  if (pauseSeconds === 0) { el.textContent = ''; el.className = 'pause-time'; return; }
+  el.textContent  = `pausa  ${formatTime(pauseSeconds)}`;
+  el.className = 'pause-time ' + (pauseInterval ? 'counting' : 'accumulated');
+}
+
+function formatTime(s) {
+  s = Math.max(0, s);
+  return [Math.floor(s/3600), Math.floor((s%3600)/60), s%60].map(n => String(n).padStart(2,'0')).join(':');
+}
+function formatShort(s) {
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
+}
+
+// ── GOAL PROGRESS ──
+function renderGoalProgress() {
+  const section = document.getElementById('goal-section');
+  if (!section) return;
+  if (studyingConstant !== null || !state.subjects.length) { section.style.display = 'none'; return; }
+  const subj = state.subjects[state.currentIndex];
+  const goal = sGoal(subj);
+  if (!goal) { section.style.display = 'none'; return; }
+
+  section.style.display = '';
+  const goalSecs = goal * 60;
+  const todayStr = new Date().toDateString();
+  const studied  = state.sessions
+    .filter(s => s.subject === sName(subj) && new Date(s.end).toDateString() === todayStr)
+    .reduce((a, s) => a + s.duration, 0) + (timerRunning ? timerSeconds : 0);
+  const pct  = Math.min(100, Math.round(studied / goalSecs * 100));
+  const done = studied >= goalSecs;
+
+  document.getElementById('goal-text').textContent = `${formatShort(studied)} / ${formatShort(goalSecs)}`;
+  document.getElementById('goal-pct').textContent  = `${pct}%`;
+  document.getElementById('goal-fill').style.width = pct + '%';
+  document.getElementById('goal-fill').className   = 'goal-bar-fill' + (done ? ' done' : '');
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  const nameEl    = document.getElementById('current-subject-name');
+  const nextList  = document.getElementById('next-list');
+  const cycleEl   = document.getElementById('cycle-indicator');
+  const todayStats = document.getElementById('today-stats');
+
+  if (!state.subjects.length && studyingConstant === null) {
+    nameEl.textContent = 'Nenhuma matéria cadastrada';
+    nameEl.className = 'subject-name empty';
+    nextList.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:4px 0">—</div>';
+    cycleEl.innerHTML = '';
+    todayStats.innerHTML = '<div style="font-size:11px;color:var(--text-dim)">—</div>';
+    renderConstantDashboard(); renderGoalProgress();
+    return;
+  }
+
+  nameEl.className = 'subject-name';
+  nameEl.textContent = studyingConstant !== null ? studyingConstant : sName(state.subjects[state.currentIndex]);
+
+  cycleEl.innerHTML = state.subjects.map((_, i) =>
+    `<div class="cycle-dot ${i === state.currentIndex ? 'active' : ''}"></div>`
+  ).join('');
+
+  if (state.subjects.length > 0) {
+    const nexts = [];
+    for (let i = 1; i <= 3; i++) nexts.push({ name: sName(state.subjects[(state.currentIndex + i) % state.subjects.length]), offset: i });
+    nextList.innerHTML = nexts.map(n =>
+      `<div class="next-item"><span class="idx">+${n.offset}</span><span class="name">${n.name}</span></div>`
+    ).join('');
+  } else {
+    nextList.innerHTML = '<div style="font-size:11px;color:var(--text-dim)">—</div>';
+  }
+
+  const todayStr = new Date().toDateString();
+  const bySubject = {};
+  state.sessions.filter(s => new Date(s.end).toDateString() === todayStr).forEach(s => {
+    bySubject[s.subject] = (bySubject[s.subject] || 0) + s.duration;
+  });
+  const entries = Object.entries(bySubject).sort((a, b) => b[1] - a[1]);
+  const maxTime = entries.length ? entries[0][1] : 1;
+
+  todayStats.innerHTML = !entries.length
+    ? '<div style="font-size:11px;color:var(--text-dim)">Nenhuma sessão hoje</div>'
+    : entries.map(([name, time]) => `
+      <div class="stat-row">
+        <span class="stat-subject">${name}</span>
+        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(time/maxTime*100)}%;background:${subjectColor(name)}"></div></div>
+        <span class="stat-time">${formatShort(time)}</span>
+      </div>`).join('');
+
+  renderConstantDashboard(); renderGoalProgress();
+}
+
+// ── CONSTANT SUBJECTS ──
+function renderConstantDashboard() {
+  const section = document.getElementById('const-dash-section');
+  if (!section) return;
+  if (!state.constantSubjects || !state.constantSubjects.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  document.getElementById('const-dash-list').innerHTML = state.constantSubjects.map(name => {
+    const isActive = studyingConstant === name;
+    const c = subjectColor(name);
+    const safe = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div class="const-item${isActive?' const-active':''}" onclick="selectConstantSubject('${safe}')">
+      <div class="const-badge" style="background:${c}">${subjectInitial(name)}</div>
+      <span class="const-name">${name}</span>
+      ${isActive ? '<span class="const-pill">selecionada</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function selectConstantSubject(name) {
+  if (timerRunning || timerSeconds > 0) { showToast('Pare o timer atual primeiro'); return; }
+  studyingConstant = (studyingConstant === name) ? null : name;
+  const nameEl = document.getElementById('current-subject-name');
+  if (nameEl) {
+    nameEl.className = 'subject-name';
+    nameEl.textContent = studyingConstant !== null ? studyingConstant : (state.subjects.length ? sName(state.subjects[state.currentIndex]) : '—');
+  }
+  renderConstantDashboard(); renderGoalProgress();
+}
+
+function addConstantSubject() {
+  const input = document.getElementById('constant-input');
+  const name  = input.value.trim();
+  if (!name) return;
+  if (!state.constantSubjects) state.constantSubjects = [];
+  if (state.constantSubjects.includes(name) || state.subjects.some(s => sName(s) === name)) { showToast('Matéria já existe'); return; }
+  state.constantSubjects.push(name);
+  save(); input.value = '';
+  renderConstantManage(); renderConstantDashboard();
+}
+
+function removeConstantSubject(idx) {
+  const name = state.constantSubjects[idx];
+  showModal({
+    icon: '🗑️', title: 'Remover matéria constante', desc: `Remover <strong>${name}</strong>?`, confirmLabel: 'Remover',
+    onConfirm: () => {
+      state.constantSubjects.splice(idx, 1);
+      if (studyingConstant === name) studyingConstant = null;
+      save(); renderConstantManage(); renderConstantDashboard();
+      showToast(`"${name}" removida`);
+    }
+  });
+}
+
+function renderConstantManage() {
+  const list = document.getElementById('const-manage-list');
+  if (!list) return;
+  if (!state.constantSubjects || !state.constantSubjects.length) {
+    list.innerHTML = '<div class="const-empty">Nenhuma matéria constante cadastrada ainda.</div>'; return;
+  }
+  list.innerHTML = state.constantSubjects.map((name, i) => {
+    const c = subjectColor(name);
+    return `<div class="const-manage-item">
+      <div class="const-icon" style="background:${c}">${subjectInitial(name)}</div>
+      <span class="const-manage-name">${name}</span>
+      <button class="icon-btn del" onclick="removeConstantSubject(${i})" title="Remover">×</button>
+    </div>`;
+  }).join('');
+}
+
+// ── SUBJECTS ──
+function addSubject() {
+  const input = document.getElementById('subject-input');
+  const name  = input.value.trim();
+  if (!name) return;
+  if (state.subjects.some(s => sName(s) === name)) { showToast('Matéria já existe'); return; }
+  state.subjects.push({ name, dailyGoal: 0 });
+  save(); input.value = '';
+  renderSubjects(); renderDashboard();
+}
+
+function removeSubject(idx) {
+  if (state.subjects.length === 1) { showToast('Deve ter ao menos uma matéria'); return; }
+  const name = sName(state.subjects[idx]);
+  showModal({
+    icon: '🗑️', title: 'Remover matéria',
+    desc: `Tem certeza que deseja remover <strong>${name}</strong>? Esta ação não pode ser desfeita.`,
+    confirmLabel: 'Remover',
+    onConfirm: () => {
+      state.subjects.splice(idx, 1);
+      if (idx < state.currentIndex) state.currentIndex--;
+      if (state.currentIndex >= state.subjects.length) state.currentIndex = 0;
+      save(); renderSubjects(); renderDashboard();
+      showToast(`"${name}" removida`);
+    }
+  });
+}
+
+function setSubjectGoal(idx, val) {
+  const g = Math.max(0, parseInt(val) || 0);
+  if (typeof state.subjects[idx] === 'string') state.subjects[idx] = { name: state.subjects[idx], dailyGoal: g };
+  else state.subjects[idx].dailyGoal = g;
+  save(); renderGoalProgress();
+}
+
+function moveSubject(idx, dir) {
+  const ni = idx + dir;
+  if (ni < 0 || ni >= state.subjects.length) return;
+  [state.subjects[idx], state.subjects[ni]] = [state.subjects[ni], state.subjects[idx]];
+  if (state.currentIndex === idx) state.currentIndex = ni;
+  else if (state.currentIndex === ni) state.currentIndex = idx;
+  save(); renderSubjects(); renderDashboard();
+}
+
+function editSubject(idx) {
+  const item = document.getElementById(`subject-item-${idx}`);
+  if (!item) return;
+  const nameEl = item.querySelector('.subject-item-name');
+  const currentName = sName(state.subjects[idx]);
+  const inp = document.createElement('input');
+  inp.className = 'input'; inp.value = currentName;
+  inp.style.cssText = 'flex:1;padding:5px 10px;font-size:13px;height:auto';
+  nameEl.replaceWith(inp); inp.focus(); inp.select();
+  let done = false;
+  const apply = () => {
+    if (done) return; done = true;
+    const newName = inp.value.trim();
+    if (!newName || newName === currentName) { renderSubjects(); return; }
+    if (state.subjects.some(s => sName(s) === newName)) { showToast('Matéria já existe'); renderSubjects(); return; }
+    state.sessions.forEach(s => { if (s.subject === currentName) s.subject = newName; });
+    if (typeof state.subjects[idx] === 'string') state.subjects[idx] = { name: newName, dailyGoal: 0 };
+    else state.subjects[idx].name = newName;
+    save(); renderSubjects(); renderDashboard();
+    showToast('Matéria renomeada');
+  };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') apply(); if (e.key === 'Escape') { done = true; renderSubjects(); } });
+  inp.addEventListener('blur', apply);
+}
+
+// ── DRAG & DROP ──
+const isTouchDevice = 'ontouchstart' in window;
+
+function onDragStart(e, idx) {
+  dragSrcIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.target.classList.add('dragging'), 0);
+}
+function onDragOver(e)  { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('drag-over'); }
+function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function onDrop(e, idx) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  if (dragSrcIdx === null || dragSrcIdx === idx) { dragSrcIdx = null; return; }
+  const src = dragSrcIdx;
+  const [moved] = state.subjects.splice(src, 1);
+  state.subjects.splice(idx, 0, moved);
+  if (state.currentIndex === src) state.currentIndex = idx;
+  else if (src < state.currentIndex && idx >= state.currentIndex) state.currentIndex--;
+  else if (src > state.currentIndex && idx <= state.currentIndex) state.currentIndex++;
+  dragSrcIdx = null;
+  save(); renderSubjects(); renderDashboard();
+}
+function onDragEnd() {
+  document.querySelectorAll('.subject-item').forEach(c => c.classList.remove('drag-over','dragging'));
+  dragSrcIdx = null;
+}
+
+function renderSubjects() {
+  renderConstantManage();
+  const list = document.getElementById('subjects-list');
+  if (!state.subjects.length) {
+    list.innerHTML = `<div class="empty-state"><p>📚</p><p>Nenhuma matéria ainda</p></div>`; return;
+  }
+  list.innerHTML = state.subjects.map((subj, i) => {
+    const name    = sName(subj);
+    const goal    = sGoal(subj);
+    const isCurrent = i === state.currentIndex;
+    const dnd = isTouchDevice ? '' : `draggable="true" ondragstart="onDragStart(event,${i})" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event,${i})" ondragend="onDragEnd(event)"`;
+    return `<div class="subject-item ${isCurrent?'current-subject':''}" id="subject-item-${i}" ${dnd}>
+      ${!isTouchDevice ? '<span class="drag-handle" title="Arrastar">⠿</span>' : ''}
+      <span class="subject-order">${i+1}</span>
+      <span class="subject-item-name">${name}</span>
+      ${isCurrent ? '<span class="current-badge">atual</span>' : ''}
+      <input type="number" class="goal-input" min="0" max="720" placeholder="meta min" value="${goal||''}"
+        title="Meta diária em minutos"
+        onchange="setSubjectGoal(${i},this.value)" onclick="event.stopPropagation()">
+      <div class="move-btns">
+        ${isTouchDevice ? `<button class="icon-btn" onclick="moveSubject(${i},-1)" ${i===0?'disabled':''}>↑</button><button class="icon-btn" onclick="moveSubject(${i},1)" ${i===state.subjects.length-1?'disabled':''}>↓</button>` : ''}
+        <button class="icon-btn edit" onclick="editSubject(${i})" title="Renomear">✎</button>
+        <button class="icon-btn del"  onclick="removeSubject(${i})" title="Remover">×</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── HISTORY ──
+let histState = { tab: 'sessions', period: 'all', subject: '', sort: 'recent' };
+let _sessId = 0;
+
+function getTodayStart()  { const d = new Date(); d.setHours(0,0,0,0); return d; }
+function getWeekStart()   { const d = new Date(); const day = d.getDay(); d.setDate(d.getDate() - (day===0?6:day-1)); d.setHours(0,0,0,0); return d; }
+function getMonthStart()  { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; }
+
+function calcStreak() {
+  if (!state.sessions.length) return 0;
+  const days = new Set(state.sessions.map(s => new Date(s.end).toDateString()));
+  const cursor = new Date(); cursor.setHours(0,0,0,0);
+  if (!days.has(cursor.toDateString())) cursor.setDate(cursor.getDate()-1);
+  let streak = 0;
+  while (days.has(cursor.toDateString())) { streak++; cursor.setDate(cursor.getDate()-1); }
+  return streak;
+}
+
+function getFilteredSessions() {
+  let sessions = [...state.sessions];
+  if (histState.period === 'today')  { const s = getTodayStart();  sessions = sessions.filter(x => new Date(x.end) >= s); }
+  else if (histState.period === 'week')  { const s = getWeekStart();   sessions = sessions.filter(x => new Date(x.end) >= s); }
+  else if (histState.period === 'month') { const s = getMonthStart();  sessions = sessions.filter(x => new Date(x.end) >= s); }
+  if (histState.subject) sessions = sessions.filter(x => x.subject === histState.subject);
+  if (histState.sort === 'recent')  sessions.sort((a,b) => new Date(b.end) - new Date(a.end));
+  else if (histState.sort === 'longest') sessions.sort((a,b) => b.duration - a.duration);
+  else if (histState.sort === 'subject') sessions.sort((a,b) => a.subject.localeCompare(b.subject));
+  return sessions;
+}
+
+function groupByDay(sessions) {
+  const map = new Map();
+  sessions.forEach(s => { const k = new Date(s.end).toDateString(); if (!map.has(k)) map.set(k,[]); map.get(k).push(s); });
+  return [...map.entries()].map(([date, sessions]) => ({ date, sessions }));
+}
+
+function getSubjectStats() {
+  const stats = {};
+  const ws = getWeekStart(), ms = getMonthStart(), ts = getTodayStart();
+  state.sessions.forEach(s => {
+    if (!stats[s.subject]) stats[s.subject] = { total:0, week:0, month:0, today:0, days: new Set() };
+    const end = new Date(s.end);
+    stats[s.subject].total += s.duration; stats[s.subject].days.add(end.toDateString());
+    if (end >= ws) stats[s.subject].week  += s.duration;
+    if (end >= ms) stats[s.subject].month += s.duration;
+    if (end >= ts) stats[s.subject].today += s.duration;
+  });
+  return Object.entries(stats).map(([name,d]) => ({ name, total:d.total, week:d.week, month:d.month, today:d.today, days:d.days.size })).sort((a,b) => b.total - a.total);
+}
+
+function renderHistory() { renderHistSummary(); updateHistSubjectFilter(); histState.tab === 'sessions' ? renderHistSessions() : renderHistSubjects(); }
+
+function renderHistSummary() {
+  const ts = getTodayStart(), ws = getWeekStart(), ms = getMonthStart();
+  let today=0, week=0, month=0;
+  state.sessions.forEach(s => { const e = new Date(s.end); if (e>=ts) today+=s.duration; if (e>=ws) week+=s.duration; if (e>=ms) month+=s.duration; });
+  const streak = calcStreak();
+  document.getElementById('hist-summary').innerHTML = `
+    <div class="hist-stat"><div class="hist-stat-label">Hoje</div><div class="hist-stat-value accent">${today?formatShort(today):'—'}</div></div>
+    <div class="hist-stat"><div class="hist-stat-label">Semana</div><div class="hist-stat-value">${week?formatShort(week):'—'}</div></div>
+    <div class="hist-stat"><div class="hist-stat-label">Mês</div><div class="hist-stat-value">${month?formatShort(month):'—'}</div></div>
+    <div class="hist-stat"><div class="hist-stat-label">Sequência</div><div class="hist-stat-value streak">${streak?streak+(streak===1?' dia':' dias'):'—'}</div></div>`;
+}
+
+function updateHistSubjectFilter() {
+  const sel = document.getElementById('hist-subject-filter');
+  if (!sel) return;
+  const subjects = [...new Set(state.sessions.map(s => s.subject))].sort();
+  sel.innerHTML = '<option value="">Todas matérias</option>' + subjects.map(s => `<option value="${s}"${histState.subject===s?' selected':''}>${s}</option>`).join('');
+}
+
+function switchHistTab(tab) {
+  histState.tab = tab;
+  document.querySelectorAll('.hist-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('hist-tab-sessions').style.display = tab==='sessions' ? '' : 'none';
+  document.getElementById('hist-tab-subjects').style.display = tab==='subjects' ? '' : 'none';
+  tab === 'sessions' ? renderHistSessions() : renderHistSubjects();
+}
+
+function setHistPeriod(period) {
+  histState.period = period;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === period));
+  renderHistSessions();
+}
+
+function renderHistSessions() {
+  histState.subject = document.getElementById('hist-subject-filter')?.value ?? '';
+  histState.sort    = document.getElementById('hist-sort')?.value ?? 'recent';
+  _sessId = 0;
+  const sessions     = getFilteredSessions();
+  const list         = document.getElementById('hist-sessions-list');
+  const showResume   = histState.period === 'today';
+  if (!sessions.length) { list.innerHTML = '<div class="empty-state"><p>🕐</p><p>Nenhuma sessão encontrada</p></div>'; return; }
+  list.innerHTML = groupByDay(sessions).map(g => renderDayGroup(g, showResume)).join('');
+}
+
+function renderDayGroup(group, showResume) {
+  const d = new Date(group.date), today = getTodayStart();
+  const yesterday = new Date(today); yesterday.setDate(today.getDate()-1);
+  let label;
+  if (d.toDateString() === today.toDateString()) label = 'Hoje';
+  else if (d.toDateString() === yesterday.toDateString()) label = 'Ontem';
+  else label = d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'short' });
+  const total = group.sessions.reduce((a,s) => a+s.duration, 0);
+  return `<div class="day-group"><div class="day-group-header"><span class="day-group-label">${label}</span><div class="day-group-line"></div><span class="day-group-total">${formatShort(total)}</span></div>${group.sessions.map(s => renderSessionItem(s, showResume)).join('')}</div>`;
+}
+
+function renderSessionItem(s, showResume) {
+  const id       = 'sess-' + (_sessId++);
+  const sessIdx  = state.sessions.indexOf(s);
+  const endDate  = new Date(s.end);
+  const endStr   = endDate.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  const startStr = s.start ? new Date(s.start).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : null;
+  const timeRange = startStr ? `${startStr} – ${endStr}` : endStr;
+  const safeSubj = s.subject.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const resumeBtn = showResume
+    ? `<button class="hist-action-btn resume" onclick="event.stopPropagation();resumeSubject('${safeSubj}')" title="Estudar mais">+ estudar</button>`
+    : '';
+  return `<div class="hist-session" id="${id}">
+    <div class="hist-session-row" onclick="toggleSession('${id}')">
+      <div class="hist-session-dot" style="background:${subjectColor(s.subject)}"></div>
+      <span class="hist-session-subject">${s.subject}</span>
+      <span class="hist-session-time">${timeRange}</span>
+      ${resumeBtn}
+      <span class="hist-session-dur">${formatShort(s.duration)}</span>
+      <span class="hist-session-chevron">▾</span>
+    </div>
+    <div class="hist-session-detail">
+      <div class="hist-detail-row">
+        ${startStr ? `<div class="hist-detail-item"><span class="hist-detail-label">Início</span><span class="hist-detail-value">${new Date(s.start).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span></div>` : ''}
+        <div class="hist-detail-item"><span class="hist-detail-label">Fim</span><span class="hist-detail-value">${new Date(s.end).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span></div>
+        <div class="hist-detail-item"><span class="hist-detail-label">Estudo</span><span class="hist-detail-value">${formatTime(s.duration)}</span></div>
+        ${s.pauseDuration > 0 ? `<div class="hist-detail-item"><span class="hist-detail-label">Pausa</span><span class="hist-detail-value" style="color:var(--orange)">${formatTime(s.pauseDuration)}</span></div>` : ''}
+      </div>
+      <div class="hist-detail-actions">
+        <button class="hist-action-btn edit" onclick="openSessionEdit('${id}',${sessIdx})">Editar</button>
+        <button class="hist-action-btn del"  onclick="deleteSession(${sessIdx})">Excluir</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleSession(id) { document.getElementById(id)?.classList.toggle('open'); }
+
+// ── RESUME SUBJECT ──
+function resumeSubject(subjectName) {
+  if (timerRunning || timerSeconds > 0) { showToast('Pare o timer atual primeiro'); return; }
+  if (state.constantSubjects.includes(subjectName)) {
+    studyingConstant = subjectName;
+    showView('dashboard');
+    showToast(`Retomando ${subjectName}`);
+    return;
+  }
+  const idx = state.subjects.findIndex(s => sName(s) === subjectName);
+  if (idx !== -1) {
+    state.currentIndex = idx; studyingConstant = null; save();
+  } else {
+    studyingConstant = subjectName; // subject removed from cycle — treat as temp constant
+  }
+  showView('dashboard');
+  showToast(`Retomando ${subjectName}`);
+}
+
+// ── SESSION EDIT ──
+function openSessionEdit(domId, sessIdx) {
+  const s = state.sessions[sessIdx];
+  if (!s) return;
+  const container = document.getElementById(domId);
+  if (!container) return;
+  const existing = container.querySelector('.hist-edit-form');
+  if (existing) { existing.remove(); return; }
+
+  const fmtLocal = iso => iso ? new Date(iso).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : '';
+  const durMins = Math.round(s.duration / 60);
+
+  const form = document.createElement('div');
+  form.className = 'hist-edit-form';
+  form.innerHTML = `
+    <div class="hist-edit-grid">
+      <div class="hist-edit-field"><label class="hist-edit-label">Matéria</label><input class="hist-edit-input" id="hed-subj-${sessIdx}" value="${s.subject.replace(/"/g,'&quot;')}"></div>
+      <div class="hist-edit-field"><label class="hist-edit-label">Duração (min)</label><input class="hist-edit-input" type="number" id="hed-dur-${sessIdx}" value="${durMins}" min="1"></div>
+      <div class="hist-edit-field"><label class="hist-edit-label">Início (HH:MM)</label><input class="hist-edit-input" id="hed-start-${sessIdx}" value="${fmtLocal(s.start)}" placeholder="--:--"></div>
+      <div class="hist-edit-field"><label class="hist-edit-label">Fim (HH:MM)</label><input class="hist-edit-input" id="hed-end-${sessIdx}" value="${fmtLocal(s.end)}" placeholder="--:--"></div>
+    </div>
+    <div class="hist-edit-actions">
+      <button class="hist-edit-btn save" onclick="saveSessionEdit(${sessIdx})">Salvar</button>
+      <button class="hist-edit-btn" onclick="this.closest('.hist-edit-form').remove()">Cancelar</button>
+    </div>`;
+  container.querySelector('.hist-session-detail').appendChild(form);
+}
+
+function saveSessionEdit(sessIdx) {
+  const s = state.sessions[sessIdx];
+  if (!s) return;
+  const newSubj = document.getElementById(`hed-subj-${sessIdx}`)?.value.trim();
+  const newDur  = parseInt(document.getElementById(`hed-dur-${sessIdx}`)?.value) || 0;
+  const newStartStr = document.getElementById(`hed-start-${sessIdx}`)?.value.trim();
+  const newEndStr   = document.getElementById(`hed-end-${sessIdx}`)?.value.trim();
+  if (!newSubj || newDur < 1) { showToast('Dados inválidos'); return; }
+  s.subject  = newSubj;
+  s.duration = newDur * 60;
+  const refDate = new Date(s.end).toDateString();
+  if (/^\d{2}:\d{2}$/.test(newStartStr)) s.start = new Date(refDate + ' ' + newStartStr).toISOString();
+  if (/^\d{2}:\d{2}$/.test(newEndStr))   s.end   = new Date(refDate + ' ' + newEndStr).toISOString();
+  save(); renderHistory(); renderDashboard();
+  showToast('Sessão editada');
+}
+
+function deleteSession(sessIdx) {
+  const s = state.sessions[sessIdx];
+  if (!s) return;
+  showModal({
+    icon: '🗑️', title: 'Excluir sessão',
+    desc: `Excluir sessão de <strong>${s.subject}</strong> (${formatShort(s.duration)})?`,
+    confirmLabel: 'Excluir',
+    onConfirm: () => { state.sessions.splice(sessIdx,1); save(); renderHistory(); renderDashboard(); showToast('Sessão excluída'); }
+  });
+}
+
+function renderHistSubjects() {
+  const stats = getSubjectStats();
+  const list  = document.getElementById('hist-subjects-list');
+  if (!stats.length) { list.innerHTML = '<div class="empty-state"><p>📊</p><p>Nenhum dado ainda</p></div>'; return; }
+  const maxTotal = stats[0].total || 1;
+  list.innerHTML = stats.map(s => `
+    <div class="subj-stat">
+      <div class="subj-stat-header"><span class="subj-stat-name">${s.name}</span><span class="subj-stat-total">${formatShort(s.total)}</span></div>
+      <div class="subj-stat-meta">
+        <div class="subj-meta-item"><span class="subj-meta-label">Semana</span><span class="subj-meta-value">${s.week?formatShort(s.week):'—'}</span></div>
+        <div class="subj-meta-item"><span class="subj-meta-label">Mês</span><span class="subj-meta-value">${s.month?formatShort(s.month):'—'}</span></div>
+        <div class="subj-meta-item"><span class="subj-meta-label">Dias estudados</span><span class="subj-meta-value">${s.days}</span></div>
+      </div>
+      <div class="subj-bar-wrap"><div class="subj-bar" style="width:${Math.round(s.total/maxTotal*100)}%;background:${subjectColor(s.name)}"></div></div>
+    </div>`).join('');
+}
+
+function clearHistory() {
+  if (!state.sessions.length) return;
+  showModal({ icon:'🗑️', title:'Limpar histórico', desc:`Isso vai apagar <strong>${state.sessions.length} sessão(ões)</strong> permanentemente. Tem certeza?`, confirmLabel:'Limpar tudo',
+    onConfirm: () => { state.sessions=[]; save(); renderHistory(); renderDashboard(); showToast('Histórico limpo'); }
+  });
+}
+
+// ── EXPORT CSV ──
+function exportCSV() {
+  const sessions = getFilteredSessions();
+  if (!sessions.length) { showToast('Nenhuma sessão para exportar'); return; }
+  const fmtDate = iso => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  };
+  const rows = ['Matéria,Início,Fim,Duração (min),Pausa (min)'];
+  sessions.forEach(s => rows.push([
+    `"${(s.subject||'').replace(/"/g,'""')}"`,
+    `"${fmtDate(s.start)}"`,
+    `"${fmtDate(s.end)}"`,
+    Math.round(s.duration/60),
+    Math.round((s.pauseDuration||0)/60)
+  ].join(',')));
+  const blob = new Blob(['﻿'+rows.join('\n')], { type:'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `ciclo-estudos-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast(`${sessions.length} sessões exportadas`);
+}
+
+// ── AI RECOMMENDATION ──
+async function getAIRecommendation() {
+  const todayStr = new Date().toDateString();
+  const sessionsToday = state.sessions
+    .filter(s => new Date(s.end).toDateString() === todayStr)
+    .map(s => ({
+      subject: s.subject,
+      duration: s.duration,
+      start: s.start
+        ? new Date(s.start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        : '—',
+      end: new Date(s.end).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    }));
+
+  const subjects = state.subjects.map(s => ({
+    name: sName(s),
+    weeklyGoalMinutes: sGoal(s),
+  }));
+
+  try {
+    const onSlow = () => {
+      const el = document.getElementById('ai-result')
+      if (el) { el.style.display = ''; el.innerHTML = '<p style="font-size:12px;color:var(--text-muted)">Conectando ao servidor, aguarde...</p>' }
+    }
+    const res = await fetchWithTimeout(`${API_URL}/api/recommendation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        currentHour: new Date().getHours(),
+        sessionsToday,
+        subjects,
+      }),
+    }, 35000, onSlow)
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+function renderAICard(cardState) {
+  const btn    = document.getElementById('ai-btn');
+  const result = document.getElementById('ai-result');
+  if (!btn || !result) return;
+
+  if (cardState === 'idle') {
+    btn.textContent = 'O que estudar agora?';
+    btn.disabled = false;
+    result.style.display = 'none';
+  } else if (cardState === 'loading') {
+    btn.textContent = 'Consultando IA...';
+    btn.disabled = true;
+  } else if (cardState === 'error') {
+    btn.textContent = 'Tentar novamente';
+    btn.disabled = false;
+    result.style.display = '';
+    result.innerHTML = '<p style="font-size:12px;color:var(--danger)">Não foi possível obter recomendação. Tente novamente.</p>';
+  } else if (cardState?.recommendation) {
+    btn.textContent = 'Atualizar';
+    btn.disabled = false;
+    result.style.display = '';
+    result.innerHTML = `
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin-bottom:8px">${cardState.recommendation}</p>
+      <p style="font-size:11px;color:var(--text-muted);line-height:1.5">${cardState.reasoning}</p>`;
+  }
+}
+
+async function handleAIRecommendation() {
+  if (!state.subjects.length) {
+    const resultEl = document.getElementById('ai-result')
+    const btn = document.getElementById('ai-btn')
+    if (resultEl) {
+      resultEl.style.display = ''
+      resultEl.innerHTML = '<p style="font-size:13px;color:var(--text-muted)">Cadastre suas matérias primeiro para receber recomendações.</p>'
+    }
+    if (btn) { btn.textContent = 'O que estudar agora?'; btn.disabled = false }
+    return
+  }
+  renderAICard('loading')
+  const data = await getAIRecommendation()
+  renderAICard(data ?? 'error')
+}
+
+// ── CALENDAR AUTH ──
+function connectCalendar() {
+  window.open(`${API_URL}/auth/google`, '_blank');
+}
+
+async function checkCalendarAuth() {
+  try {
+    const res = await fetchWithTimeout(`${API_URL}/api/calendar/status`)
+    if (!res.ok) return
+    const data = await res.json()
+    const banner = document.getElementById('auth-banner')
+    if (banner) banner.style.display = data.authenticated ? 'none' : ''
+  } catch {
+    const banner = document.getElementById('auth-banner')
+    if (banner) {
+      banner.style.display = ''
+      const textEl = banner.querySelector('.auth-banner-text')
+      if (textEl) textEl.textContent = 'Servidor iniciando, tente novamente em alguns segundos'
+    }
+  }
+}
+
+// ── EXAM PLAN ──
+async function handleExamPlan() {
+  const btn = document.getElementById('exam-btn');
+  const result = document.getElementById('exam-result');
+  const subject = document.getElementById('exam-subject')?.value.trim();
+  const examDate = document.getElementById('exam-date')?.value;
+  const topicsRaw = document.getElementById('exam-topics')?.value ?? '';
+  const hours = parseFloat(document.getElementById('exam-hours')?.value);
+
+  const topics = topicsRaw.split('\n').map(t => t.trim()).filter(Boolean);
+
+  if (!subject || !examDate || !topics.length || !hours || hours < 0.5) {
+    result.style.display = '';
+    result.innerHTML = '<p style="font-size:12px;color:var(--danger)">Preencha todos os campos corretamente.</p>';
+    return;
+  }
+
+  if (btn) { btn.textContent = 'Planejando...'; btn.disabled = true; }
+  result.style.display = 'none';
+
+  try {
+    const onSlow = () => {
+      result.style.display = ''
+      result.innerHTML = '<p style="font-size:12px;color:var(--text-muted)">Conectando ao servidor, aguarde...</p>'
+    }
+    const res = await fetchWithTimeout(`${API_URL}/api/exam/plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subject,
+        examDate: new Date(examDate + 'T23:59:59').toISOString(),
+        topics,
+        estimatedHoursTotal: hours,
+      }),
+    }, 35000, onSlow)
+
+    const data = await res.json()
+
+    result.style.display = ''
+    if (!res.ok) {
+      if (data.error === 'NOT_AUTHENTICATED') {
+        result.innerHTML = '<p style="font-size:12px;color:var(--orange)">Conecte o Google Calendar primeiro.</p>'
+      } else {
+        result.innerHTML = '<p style="font-size:12px;color:var(--danger)">Erro ao gerar plano. Tente novamente.</p>'
+      }
+    } else {
+      result.innerHTML = `
+        <p style="font-size:13px;color:var(--green);margin-bottom:6px">${data.blocksCreated} bloco(s) criado(s) no seu Calendar.</p>
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.5">${data.summary}</p>`;
+      document.getElementById('exam-subject').value = '';
+      document.getElementById('exam-date').value = '';
+      document.getElementById('exam-topics').value = '';
+      document.getElementById('exam-hours').value = '';
+    }
+  } catch {
+    result.style.display = '';
+    result.innerHTML = '<p style="font-size:12px;color:var(--danger)">Não foi possível conectar ao servidor.</p>';
+  } finally {
+    if (btn) { btn.textContent = 'Gerar plano'; btn.disabled = false; }
+  }
+}
+
+// ── VIEWS ──
+const viewMeta = {
+  dashboard: ['dashboard', 'bem-vindo de volta'],
+  subjects:  ['matérias', 'gerencie seu ciclo'],
+  history:   ['histórico', 'progresso de estudos'],
+  progress:  ['progresso', 'sua semana'],
+};
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  const allIcons = [...document.querySelectorAll('.left-sidebar .nav-icon'), ...document.querySelectorAll('.mobile-nav .nav-icon')];
+  const map = { dashboard:0, subjects:1, history:2, progress:3 };
+  allIcons.forEach((b,i) => b.classList.toggle('active', i%4 === map[name]));
+  const [title, sub] = viewMeta[name] || ['',''];
+  document.getElementById('page-title').textContent = title;
+  document.getElementById('page-sub').textContent = sub;
+  if (name === 'subjects') renderSubjects();
+  if (name === 'history')  renderHistory();
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'progress') renderProgress();
+}
+
+// ── PROGRESS VIEW ──
+async function renderProgress() {
+  const container = document.getElementById('progress-content')
+  if (!container) return
+
+  container.innerHTML = `
+    <div class="progress-skeleton">
+      <div class="progress-skeleton-block" style="height:112px"></div>
+      <div class="progress-skeleton-block" style="height:90px"></div>
+      <div class="progress-skeleton-block" style="height:90px"></div>
+    </div>`
+
+  if (!state.subjects.length) {
+    container.innerHTML = '<p class="progress-error">Adicione matérias ao ciclo para ver o diagnóstico.</p>'
+    return
+  }
+
+  const minsToStr = m => {
+    const h = Math.floor(m / 60), r = m % 60
+    return h > 0 ? `${h}h${r > 0 ? ` ${r}min` : ''}` : `${r}min`
+  }
+
+  try {
+    const weekStart = getWeekStart()
+    const sessionsThisWeek = state.sessions.filter(s => new Date(s.end) >= weekStart)
+    const onSlow = () => {
+      container.innerHTML = `
+        <div class="progress-skeleton">
+          <div class="progress-skeleton-block" style="height:112px"></div>
+        </div>
+        <p class="progress-error" style="margin-top:12px">Conectando ao servidor, aguarde...</p>`
+    }
+    const res = await fetchWithTimeout(`${API_URL}/api/progress/diagnosis`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subjects: state.subjects.map(s => ({ name: sName(s), dailyGoal: sGoal(s) })),
+        weekStart: weekStart.toISOString(),
+        sessions: sessionsThisWeek,
+      }),
+    }, 35000, onSlow)
+    if (!res.ok) throw new Error(String(res.status))
+    const data = await res.json()
+
+    const subjectsHTML = (data.subjects || []).map(s => {
+      const pct = s.goalMinutes > 0 ? Math.min(100, Math.round(s.studiedMinutes / s.goalMinutes * 100)) : 0
+      return `
+        <div class="progress-subject-card">
+          <div class="progress-subject-name">${s.name}</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar bar-${s.status}" style="width:${pct}%"></div>
+          </div>
+          <div class="progress-time-label">${minsToStr(s.studiedMinutes)} estudadas${s.goalMinutes > 0 ? ` de ${minsToStr(s.goalMinutes)}` : ' esta semana'}</div>
+          <div class="progress-recommendation">${s.recommendation}</div>
+        </div>`
+    }).join('')
+
+    container.innerHTML = `
+      <div class="progress-overall-card">
+        <div class="progress-overall-top">
+          <span class="progress-status-badge status-${data.overallStatus}">${(data.overallStatus || '').replace('_', ' ')}</span>
+        </div>
+        <div class="progress-overall-msg">${data.overallMessage}</div>
+        <div class="progress-priority">▶&nbsp;${data.priorityAction}</div>
+      </div>
+      ${subjectsHTML}
+      <button class="progress-refresh-btn" onclick="renderProgress()">↺ Atualizar diagnóstico</button>`
+  } catch {
+    container.innerHTML = `
+      <p class="progress-error" style="color:var(--danger)">Não foi possível carregar o diagnóstico. Tente novamente.</p>
+      <button class="progress-refresh-btn" onclick="renderProgress()">↺ Tentar novamente</button>`
+  }
+}
+
+// ── NOTIFICATIONS ──
+function relativeTime(iso) {
+  const ms = Date.now() - new Date(iso).getTime()
+  const min = Math.floor(ms / 60000)
+  if (min < 1) return 'agora mesmo'
+  if (min < 60) return `há ${min}min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `há ${h}h`
+  return `há ${Math.floor(h / 24)}d`
+}
+
+function updateNotifBadge(count) {
+  const badge = document.getElementById('notif-badge')
+  if (!badge) return
+  if (count > 0) {
+    badge.textContent = count > 9 ? '9+' : String(count)
+    badge.style.display = ''
+  } else {
+    badge.style.display = 'none'
+  }
+}
+
+async function loadNotifBadge() {
+  try {
+    const res = await fetchWithTimeout(`${API_URL}/api/notifications?unreadOnly=true`)
+    if (!res.ok) return
+    updateNotifBadge((await res.json()).length)
+  } catch {}
+}
+
+function toggleNotifDropdown() {
+  const dropdown = document.getElementById('notif-dropdown')
+  if (!dropdown) return
+  if (dropdown.style.display !== 'none') {
+    dropdown.style.display = 'none'
+  } else {
+    dropdown.style.display = ''
+    loadNotifDropdown()
+  }
+}
+
+async function loadNotifDropdown() {
+  const list = document.getElementById('notif-list')
+  if (!list) return
+  list.innerHTML = '<div class="notif-empty" style="color:var(--text-muted)">Carregando notificações...</div>'
+  try {
+    const res = await fetchWithTimeout(`${API_URL}/api/notifications`)
+    if (!res.ok) throw new Error()
+    const notifications = await res.json()
+    const limited = notifications.slice(0, 10)
+    if (!limited.length) { list.innerHTML = '<div class="notif-empty">Nenhuma notificação ainda</div>'; return; }
+    const typeIcon = { daily_digest: '📅', block_reminder: '⏱', neglect_alert: '⚠️' }
+    list.innerHTML = limited.map((n, i) => `
+      <div class="notif-item${n.read ? '' : ' notif-unread'}" onclick="markNotifRead(${i}, this)">
+        <span class="notif-type-icon">${typeIcon[n.type] || '🔔'}</span>
+        <div class="notif-body">
+          <p class="notif-msg">${n.message}</p>
+          <span class="notif-time">${relativeTime(n.createdAt)}</span>
+        </div>
+      </div>`).join('')
+  } catch {
+    list.innerHTML = '<div class="notif-empty">Não foi possível carregar notificações</div>'
+  }
+}
+
+async function markNotifRead(idx, el) {
+  try {
+    await fetchWithTimeout(`${API_URL}/api/notifications/${idx}/read`, { method: 'PATCH' })
+    el.classList.remove('notif-unread')
+    await loadNotifBadge()
+  } catch {}
+}
+
+// Close notification dropdown when clicking outside
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('notif-bell-wrap')
+  const dropdown = document.getElementById('notif-dropdown')
+  if (!dropdown || dropdown.style.display === 'none') return
+  if (wrap && !wrap.contains(e.target)) dropdown.style.display = 'none'
+})
+
+// ── KEYBOARD SHORTCUTS ──
+let kbdOpen = false;
+function toggleKbd() {
+  kbdOpen = !kbdOpen;
+  document.getElementById('kbd-panel').classList.toggle('visible', kbdOpen);
+  document.getElementById('kbd-toggle-btn').style.display = kbdOpen ? 'none' : '';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+  if (e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault();
+    if (timerRunning) pauseTimer(); else startTimer();
+  } else if (e.key === 'f' || e.key === 'F') {
+    if (timerRunning || timerSeconds > 0) finishSession();
+  } else if (e.key === '1') { showView('dashboard'); }
+  else if (e.key === '2') { showView('subjects'); }
+  else if (e.key === '3') { showView('history'); }
+  else if (e.key === 'Escape' && kbdOpen) { toggleKbd(); }
+});
+
+// ── TOAST ──
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ── MODAL ──
+let modalAction = null;
+function showModal({ icon, title, desc, confirmLabel, onConfirm }) {
+  document.getElementById('modal-icon').textContent = icon;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-desc').innerHTML = desc;
+  document.getElementById('modal-confirm-btn').textContent = confirmLabel;
+  modalAction = onConfirm;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModalDirect() { document.getElementById('modal-overlay').classList.remove('show'); modalAction = null; }
+function closeModal(e) { if (e.target === document.getElementById('modal-overlay')) closeModalDirect(); }
+function confirmModalAction() { if (modalAction) modalAction(); closeModalDirect(); }
+
+// ── BEFOREUNLOAD ──
+window.addEventListener('beforeunload', e => {
+  if (timerRunning || timerSeconds > 0) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// ── INIT ──
+load();
+renderDashboard();
+checkCalendarAuth();
+loadNotifBadge();
