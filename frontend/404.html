@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ciclo de Estudos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="page-title" id="page-title">dashboard</div>
+    <div class="page-sub" id="page-sub">bem-vindo de volta</div>
+  </div>
+  <div class="header-right">
+    <div class="clock-badge" id="clock-badge">--:--</div>
+    <div id="notif-bell-wrap" class="notif-bell-wrap">
+      <button class="notif-bell-btn" id="notif-bell-btn" onclick="toggleNotifDropdown()">🔔</button>
+      <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+      <div class="notif-dropdown" id="notif-dropdown" style="display:none">
+        <div class="notif-dropdown-header">Notificações</div>
+        <div id="notif-list"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="body-layout">
+
+<!-- SIDEBAR -->
+<nav class="left-sidebar">
+  <button class="nav-icon active" onclick="showView('dashboard')" title="Dashboard">⊞<span class="nav-dot" id="nav-dot-0"></span></button>
+  <button class="nav-icon" onclick="showView('subjects')" title="Matérias">☰<span class="nav-dot" id="nav-dot-1"></span></button>
+  <button class="nav-icon" onclick="showView('history')" title="Histórico">◷<span class="nav-dot" id="nav-dot-2"></span></button>
+  <button class="nav-icon" onclick="showView('progress')" title="Progresso" data-view="progress">◎<span class="nav-dot" id="nav-dot-6"></span></button>
+</nav>
+
+<!-- MAIN -->
+<div class="main-wrap">
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div id="auth-banner" class="auth-banner" style="display:none">
+        <span class="auth-banner-text">Conecte o Google Calendar para habilitar o planejamento de provas</span>
+        <button class="btn-auth-connect" onclick="connectCalendar()">Conectar</button>
+      </div>
+      <div class="dashboard-layout">
+
+        <div class="card timer-card" id="timer-card">
+          <div>
+            <div class="subject-label">Estudando agora</div>
+            <div class="subject-name" id="current-subject-name">—</div>
+            <div class="cycle-indicator" id="cycle-indicator"></div>
+          </div>
+
+          <!-- Pomodoro -->
+          <div class="pomo-section">
+            <div class="pomo-toggle-row">
+              <span class="pomo-toggle-label">Modo Pomodoro</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pomo-toggle" onchange="onPomoToggle()">
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+            <div class="pomo-config" id="pomo-config">
+              <div class="pomo-field"><label>Foco (min)</label><input type="number" id="pomo-focus" value="25" min="1" max="120"></div>
+              <div class="pomo-field"><label>Pausa (min)</label><input type="number" id="pomo-break" value="5" min="1" max="60"></div>
+              <span id="pomo-phase-badge" class="pomo-phase-badge pomo-phase-focus">Foco</span>
+            </div>
+            <div class="pomo-block-bar" id="pomo-block-bar"><div class="pomo-block-bar-fill" id="pomo-bar-fill"></div></div>
+          </div>
+
+          <div class="timer-display">
+            <div class="timer-time" id="timer-display">00:00:00</div>
+            <div class="timer-status" id="timer-status">parado</div>
+            <div class="pause-time" id="pause-display"></div>
+          </div>
+
+          <!-- Goal progress -->
+          <div class="goal-section" id="goal-section">
+            <div class="goal-bar-meta">
+              <span id="goal-text"></span>
+              <span id="goal-pct"></span>
+            </div>
+            <div class="goal-bar-track"><div class="goal-bar-fill" id="goal-fill"></div></div>
+          </div>
+
+          <div class="timer-controls">
+            <button class="btn btn-primary" id="btn-start" onclick="startTimer()">Iniciar</button>
+            <button class="btn" id="btn-pause" onclick="pauseTimer()" disabled>Pausar</button>
+            <button class="btn btn-danger" id="btn-finish" onclick="finishSession()" disabled>Finalizar</button>
+          </div>
+        </div>
+
+        <div class="dash-right">
+          <div class="card">
+            <div class="card-label">Próximas</div>
+            <div class="next-list" id="next-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-label">Hoje</div>
+            <div class="stats-grid" id="today-stats"></div>
+          </div>
+        </div>
+
+        <div class="card ai-card" id="ai-card">
+          <div class="card-label">Recomendação IA</div>
+          <div id="ai-result" style="display:none;margin-bottom:12px"></div>
+          <button class="btn btn-ai" id="ai-btn" onclick="handleAIRecommendation()">O que estudar agora?</button>
+        </div>
+
+        <div class="card exam-card" id="exam-card">
+          <div class="card-label">Planejar prova</div>
+          <div class="exam-form">
+            <div class="exam-field">
+              <label class="exam-label">Matéria</label>
+              <input class="input exam-input" id="exam-subject" type="text" placeholder="Ex: Cálculo II">
+            </div>
+            <div class="exam-field">
+              <label class="exam-label">Data da prova</label>
+              <input class="input exam-input" id="exam-date" type="date">
+            </div>
+            <div class="exam-field">
+              <label class="exam-label">Tópicos (um por linha)</label>
+              <textarea class="input exam-textarea" id="exam-topics" placeholder="Derivadas&#10;Integrais&#10;Limites"></textarea>
+            </div>
+            <div class="exam-field">
+              <label class="exam-label">Horas estimadas</label>
+              <input class="input exam-input" id="exam-hours" type="number" min="0.5" step="0.5" placeholder="Ex: 10">
+            </div>
+          </div>
+          <div id="exam-result" style="display:none;margin-top:12px"></div>
+          <button class="btn btn-exam" id="exam-btn" onclick="handleExamPlan()">Gerar plano</button>
+        </div>
+
+      </div>
+
+      <div class="card const-dash-card" id="const-dash-section" style="display:none">
+        <div class="card-label">Matérias constantes — clique para selecionar</div>
+        <div class="const-list" id="const-dash-list"></div>
+      </div>
+    </div>
+
+    <!-- SUBJECTS -->
+    <div class="view" id="view-subjects">
+      <div class="section-header">
+        <div class="section-title">Matérias do ciclo</div>
+      </div>
+      <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px">Arraste para reordenar (desktop) · Meta diária em minutos (0 = sem meta)</p>
+      <div class="add-form">
+        <input class="input" id="subject-input" placeholder="Nome da matéria..." maxlength="40"
+          onkeydown="if(event.key==='Enter') addSubject()">
+        <button class="btn-add" onclick="addSubject()">+ Adicionar</button>
+      </div>
+      <div class="subjects-list" id="subjects-list"></div>
+
+      <hr class="section-divider">
+
+      <div class="section-header">
+        <div class="section-title">Matérias constantes</div>
+      </div>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Estudadas fora do ciclo (ex: Inglês). Não avançam a sequência ao finalizar.</p>
+      <div class="add-form">
+        <input class="input" id="constant-input" placeholder="Ex: Inglês, Redação..." maxlength="40"
+          onkeydown="if(event.key==='Enter') addConstantSubject()">
+        <button class="btn-add" onclick="addConstantSubject()">+ Adicionar</button>
+      </div>
+      <div id="const-manage-list"></div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="view" id="view-progress">
+      <div id="progress-content"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="view" id="view-history">
+      <div class="history-header">
+        <div class="section-title">Histórico de sessões</div>
+        <div class="history-header-actions">
+          <button class="export-btn" onclick="exportCSV()">Exportar CSV</button>
+          <button class="clear-btn" onclick="clearHistory()">Limpar tudo</button>
+        </div>
+      </div>
+      <div class="hist-summary" id="hist-summary"></div>
+      <div class="hist-tabs">
+        <button class="hist-tab active" data-tab="sessions" onclick="switchHistTab('sessions')">Sessões</button>
+        <button class="hist-tab" data-tab="subjects" onclick="switchHistTab('subjects')">Por matéria</button>
+      </div>
+      <div id="hist-tab-sessions">
+        <div class="hist-controls">
+          <div class="hist-period-btns">
+            <button class="period-btn active" data-period="all"   onclick="setHistPeriod('all')">Tudo</button>
+            <button class="period-btn" data-period="today"  onclick="setHistPeriod('today')">Hoje</button>
+            <button class="period-btn" data-period="week"   onclick="setHistPeriod('week')">Semana</button>
+            <button class="period-btn" data-period="month"  onclick="setHistPeriod('month')">Mês</button>
+          </div>
+          <select class="hist-select" id="hist-subject-filter" onchange="renderHistSessions()">
+            <option value="">Todas matérias</option>
+          </select>
+          <select class="hist-select" id="hist-sort" onchange="renderHistSessions()">
+            <option value="recent">Mais recente</option>
+            <option value="longest">Maior duração</option>
+            <option value="subject">Por matéria</option>
+          </select>
+        </div>
+        <div id="hist-sessions-list"></div>
+      </div>
+      <div id="hist-tab-subjects" style="display:none">
+        <div id="hist-subjects-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav">
+  <button class="nav-icon active" onclick="showView('dashboard')">⊞<span class="nav-dot" id="nav-dot-3"></span></button>
+  <button class="nav-icon" onclick="showView('subjects')">☰<span class="nav-dot" id="nav-dot-4"></span></button>
+  <button class="nav-icon" onclick="showView('history')">◷<span class="nav-dot" id="nav-dot-5"></span></button>
+  <button class="nav-icon" onclick="showView('progress')">◎<span class="nav-dot" id="nav-dot-7"></span></button>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-icon" id="modal-icon">⚠️</div>
+    <div class="modal-title" id="modal-title">Confirmar</div>
+    <div class="modal-desc" id="modal-desc"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModalDirect()">Cancelar</button>
+      <button class="btn btn-danger" id="modal-confirm-btn" onclick="confirmModalAction()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- KEYBOARD SHORTCUTS -->
+<div class="kbd-hint" id="kbd-hint">
+  <div class="kbd-panel" id="kbd-panel">
+    <div class="kbd-panel-title">Atalhos <button class="kbd-close" onclick="toggleKbd()">×</button></div>
+    <div class="kbd-row"><span class="kbd-key">Espaço</span><span class="kbd-desc">Iniciar / Pausar</span></div>
+    <div class="kbd-row"><span class="kbd-key">F</span><span class="kbd-desc">Finalizar sessão</span></div>
+    <div class="kbd-row"><span class="kbd-key">1</span><span class="kbd-desc">Dashboard</span></div>
+    <div class="kbd-row"><span class="kbd-key">2</span><span class="kbd-desc">Matérias</span></div>
+    <div class="kbd-row"><span class="kbd-key">3</span><span class="kbd-desc">Histórico</span></div>
+  </div>
+  <button class="kbd-toggle-btn" id="kbd-toggle-btn" onclick="toggleKbd()">⌨ atalhos</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
