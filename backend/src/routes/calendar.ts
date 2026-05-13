@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply } from 'fastify'
 import { getAuthenticatedCalendar, loadTokens } from '../lib/tokenStore.js'
 
 // ── tipos internos ──────────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ function calcFreeSlots(
 
 /** Trata NOT_AUTHENTICATED e relança outros erros */
 async function withAuth<T>(
-  reply: Parameters<Parameters<FastifyInstance['get']>[1]>[1],
+  reply: FastifyReply,
   fn: () => Promise<T>,
 ): Promise<T | void> {
   try {
