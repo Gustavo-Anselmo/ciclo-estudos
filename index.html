@@ -34,6 +34,7 @@
   <button class="nav-icon active" onclick="showView('dashboard')" title="Dashboard">⊞<span class="nav-dot" id="nav-dot-0"></span></button>
   <button class="nav-icon" onclick="showView('subjects')" title="Matérias">☰<span class="nav-dot" id="nav-dot-1"></span></button>
   <button class="nav-icon" onclick="showView('history')" title="Histórico">◷<span class="nav-dot" id="nav-dot-2"></span></button>
+  <button class="nav-icon" onclick="showView('planning')" title="Planejamento">📋<span class="nav-dot"></span></button>
   <button class="nav-icon" onclick="showView('progress')" title="Progresso" data-view="progress">◎<span class="nav-dot" id="nav-dot-6"></span></button>
 </nav>
 
@@ -49,49 +50,57 @@
       </div>
       <div class="dashboard-layout">
 
-        <div class="card timer-card" id="timer-card">
-          <div>
-            <div class="subject-label">Estudando agora</div>
-            <div class="subject-name" id="current-subject-name">—</div>
-            <div class="cycle-indicator" id="cycle-indicator"></div>
-          </div>
-
-          <!-- Pomodoro -->
-          <div class="pomo-section">
-            <div class="pomo-toggle-row">
-              <span class="pomo-toggle-label">Modo Pomodoro</span>
-              <label class="toggle-switch">
-                <input type="checkbox" id="pomo-toggle" onchange="onPomoToggle()">
-                <span class="toggle-knob"></span>
-              </label>
+        <div class="dash-left">
+          <div class="card timer-card" id="timer-card">
+            <div>
+              <div class="subject-label">Estudando agora</div>
+              <div class="subject-name" id="current-subject-name">—</div>
+              <div class="cycle-indicator" id="cycle-indicator"></div>
             </div>
-            <div class="pomo-config" id="pomo-config">
-              <div class="pomo-field"><label>Foco (min)</label><input type="number" id="pomo-focus" value="25" min="1" max="120"></div>
-              <div class="pomo-field"><label>Pausa (min)</label><input type="number" id="pomo-break" value="5" min="1" max="60"></div>
-              <span id="pomo-phase-badge" class="pomo-phase-badge pomo-phase-focus">Foco</span>
+
+            <!-- Pomodoro -->
+            <div class="pomo-section">
+              <div class="pomo-toggle-row">
+                <span class="pomo-toggle-label">Modo Pomodoro</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="pomo-toggle" onchange="onPomoToggle()">
+                  <span class="toggle-knob"></span>
+                </label>
+              </div>
+              <div class="pomo-config" id="pomo-config">
+                <div class="pomo-field"><label>Foco (min)</label><input type="number" id="pomo-focus" value="25" min="1" max="120"></div>
+                <div class="pomo-field"><label>Pausa (min)</label><input type="number" id="pomo-break" value="5" min="1" max="60"></div>
+                <span id="pomo-phase-badge" class="pomo-phase-badge pomo-phase-focus">Foco</span>
+              </div>
+              <div class="pomo-block-bar" id="pomo-block-bar"><div class="pomo-block-bar-fill" id="pomo-bar-fill"></div></div>
             </div>
-            <div class="pomo-block-bar" id="pomo-block-bar"><div class="pomo-block-bar-fill" id="pomo-bar-fill"></div></div>
-          </div>
 
-          <div class="timer-display">
-            <div class="timer-time" id="timer-display">00:00:00</div>
-            <div class="timer-status" id="timer-status">parado</div>
-            <div class="pause-time" id="pause-display"></div>
-          </div>
-
-          <!-- Goal progress -->
-          <div class="goal-section" id="goal-section">
-            <div class="goal-bar-meta">
-              <span id="goal-text"></span>
-              <span id="goal-pct"></span>
+            <div class="timer-display">
+              <div class="timer-time" id="timer-display">00:00:00</div>
+              <div class="timer-status" id="timer-status">parado</div>
+              <div class="pause-time" id="pause-display"></div>
             </div>
-            <div class="goal-bar-track"><div class="goal-bar-fill" id="goal-fill"></div></div>
+
+            <!-- Goal progress -->
+            <div class="goal-section" id="goal-section">
+              <div class="goal-bar-meta">
+                <span id="goal-text"></span>
+                <span id="goal-pct"></span>
+              </div>
+              <div class="goal-bar-track"><div class="goal-bar-fill" id="goal-fill"></div></div>
+            </div>
+
+            <div class="timer-controls">
+              <button class="btn btn-primary" id="btn-start" onclick="startTimer()">Iniciar</button>
+              <button class="btn" id="btn-pause" onclick="pauseTimer()" disabled>Pausar</button>
+              <button class="btn btn-danger" id="btn-finish" onclick="finishSession()" disabled>Finalizar</button>
+            </div>
           </div>
 
-          <div class="timer-controls">
-            <button class="btn btn-primary" id="btn-start" onclick="startTimer()">Iniciar</button>
-            <button class="btn" id="btn-pause" onclick="pauseTimer()" disabled>Pausar</button>
-            <button class="btn btn-danger" id="btn-finish" onclick="finishSession()" disabled>Finalizar</button>
+          <div class="card ai-card" id="ai-card">
+            <div class="card-label">Recomendação IA</div>
+            <div id="ai-result" style="display:none;margin-bottom:12px"></div>
+            <button class="btn btn-ai" id="ai-btn" onclick="handleAIRecommendation()">O que estudar agora?</button>
           </div>
         </div>
 
@@ -100,47 +109,12 @@
             <div class="card-label">Próximas</div>
             <div class="next-list" id="next-list"></div>
           </div>
-          <div class="card">
-            <div class="card-label">Hoje</div>
-            <div class="stats-grid" id="today-stats"></div>
+          <div class="card const-dash-card" id="const-dash-section" style="display:none">
+            <div class="card-label">Matérias constantes — clique para selecionar</div>
+            <div class="const-list" id="const-dash-list"></div>
           </div>
         </div>
 
-        <div class="card ai-card" id="ai-card">
-          <div class="card-label">Recomendação IA</div>
-          <div id="ai-result" style="display:none;margin-bottom:12px"></div>
-          <button class="btn btn-ai" id="ai-btn" onclick="handleAIRecommendation()">O que estudar agora?</button>
-        </div>
-
-        <div class="card exam-card" id="exam-card">
-          <div class="card-label">Planejar prova</div>
-          <div class="exam-form">
-            <div class="exam-field">
-              <label class="exam-label">Matéria</label>
-              <input class="input exam-input" id="exam-subject" type="text" placeholder="Ex: Cálculo II">
-            </div>
-            <div class="exam-field">
-              <label class="exam-label">Data da prova</label>
-              <input class="input exam-input" id="exam-date" type="date">
-            </div>
-            <div class="exam-field">
-              <label class="exam-label">Tópicos (um por linha)</label>
-              <textarea class="input exam-textarea" id="exam-topics" placeholder="Derivadas&#10;Integrais&#10;Limites"></textarea>
-            </div>
-            <div class="exam-field">
-              <label class="exam-label">Horas estimadas</label>
-              <input class="input exam-input" id="exam-hours" type="number" min="0.5" step="0.5" placeholder="Ex: 10">
-            </div>
-          </div>
-          <div id="exam-result" style="display:none;margin-top:12px"></div>
-          <button class="btn btn-exam" id="exam-btn" onclick="handleExamPlan()">Gerar plano</button>
-        </div>
-
-      </div>
-
-      <div class="card const-dash-card" id="const-dash-section" style="display:none">
-        <div class="card-label">Matérias constantes — clique para selecionar</div>
-        <div class="const-list" id="const-dash-list"></div>
       </div>
     </div>
 
@@ -174,6 +148,35 @@
     <!-- PROGRESS -->
     <div class="view" id="view-progress">
       <div id="progress-content"></div>
+    </div>
+
+    <!-- PLANNING -->
+    <div class="view" id="view-planning">
+      <div style="max-width:600px;margin:0 auto">
+        <div class="card exam-card" id="exam-card">
+          <div class="card-label">Planejar prova</div>
+          <div class="exam-form">
+            <div class="exam-field">
+              <label class="exam-label">Matéria</label>
+              <input class="input exam-input" id="exam-subject" type="text" placeholder="Ex: Cálculo II">
+            </div>
+            <div class="exam-field">
+              <label class="exam-label">Data da prova</label>
+              <input class="input exam-input" id="exam-date" type="date">
+            </div>
+            <div class="exam-field">
+              <label class="exam-label">Tópicos (um por linha)</label>
+              <textarea class="input exam-textarea" id="exam-topics" placeholder="Derivadas&#10;Integrais&#10;Limites"></textarea>
+            </div>
+            <div class="exam-field">
+              <label class="exam-label">Horas estimadas</label>
+              <input class="input exam-input" id="exam-hours" type="number" min="0.5" step="0.5" placeholder="Ex: 10">
+            </div>
+          </div>
+          <div id="exam-result" style="display:none;margin-top:12px"></div>
+          <button class="btn btn-exam" id="exam-btn" onclick="handleExamPlan()">Gerar plano</button>
+        </div>
+      </div>
     </div>
 
     <!-- HISTORY -->
@@ -223,6 +226,7 @@
   <button class="nav-icon active" onclick="showView('dashboard')">⊞<span class="nav-dot" id="nav-dot-3"></span></button>
   <button class="nav-icon" onclick="showView('subjects')">☰<span class="nav-dot" id="nav-dot-4"></span></button>
   <button class="nav-icon" onclick="showView('history')">◷<span class="nav-dot" id="nav-dot-5"></span></button>
+  <button class="nav-icon" onclick="showView('planning')">📋<span class="nav-dot"></span></button>
   <button class="nav-icon" onclick="showView('progress')">◎<span class="nav-dot" id="nav-dot-7"></span></button>
 </div>
 

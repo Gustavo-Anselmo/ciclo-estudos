@@ -344,7 +344,7 @@ function renderDashboard() {
   const entries = Object.entries(bySubject).sort((a, b) => b[1] - a[1]);
   const maxTime = entries.length ? entries[0][1] : 1;
 
-  todayStats.innerHTML = !entries.length
+  if (todayStats) todayStats.innerHTML = !entries.length
     ? '<div style="font-size:11px;color:var(--text-dim)">Nenhuma sessão hoje</div>'
     : entries.map(([name, time]) => `
       <div class="stat-row">
@@ -990,6 +990,7 @@ const viewMeta = {
   dashboard: ['dashboard', 'bem-vindo de volta'],
   subjects:  ['matérias', 'gerencie seu ciclo'],
   history:   ['histórico', 'progresso de estudos'],
+  planning:  ['planejamento', 'provas e prazos'],
   progress:  ['progresso', 'sua semana'],
 };
 
@@ -997,15 +998,21 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
   const allIcons = [...document.querySelectorAll('.left-sidebar .nav-icon'), ...document.querySelectorAll('.mobile-nav .nav-icon')];
-  const map = { dashboard:0, subjects:1, history:2, progress:3 };
-  allIcons.forEach((b,i) => b.classList.toggle('active', i%4 === map[name]));
+  const map = { dashboard:0, subjects:1, history:2, planning:3, progress:4 };
+  allIcons.forEach((b,i) => b.classList.toggle('active', i%5 === map[name]));
   const [title, sub] = viewMeta[name] || ['',''];
   document.getElementById('page-title').textContent = title;
   document.getElementById('page-sub').textContent = sub;
-  if (name === 'subjects') renderSubjects();
-  if (name === 'history')  renderHistory();
+  if (name === 'subjects')  renderSubjects();
+  if (name === 'history')   renderHistory();
   if (name === 'dashboard') renderDashboard();
-  if (name === 'progress') renderProgress();
+  if (name === 'progress')  renderProgress();
+  if (name === 'planning')  renderPlanning();
+}
+
+// ── PLANNING VIEW ──
+function renderPlanning() {
+  // content is static HTML in view-planning
 }
 
 // ── PROGRESS VIEW ──

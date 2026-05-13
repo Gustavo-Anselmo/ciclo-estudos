@@ -209,7 +209,8 @@ header {
 .btn-danger { border-color: var(--danger); color: var(--danger); }
 .btn-danger:hover:not(:disabled) { background: var(--danger-dim); }
 
-/* Dash right column */
+/* Dash columns */
+.dash-left  { display: flex; flex-direction: column; gap: 14px; }
 .dash-right { display: flex; flex-direction: column; gap: 14px; }
 
 .card-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
@@ -229,7 +230,7 @@ header {
 .stat-time     { font-family: var(--mono); font-size: 10px; color: var(--text-dim); width: 46px; text-align: right; flex-shrink: 0; }
 
 /* Constant subjects */
-.const-dash-card { margin-top: 14px; }
+.const-dash-card { }
 .const-list { display: flex; flex-direction: column; gap: 6px; }
 .const-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 7px; background: var(--surface2); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
 .const-item:hover { border-color: var(--border-light); background: var(--surface3); }
@@ -439,7 +440,7 @@ header {
 .mobile-nav { display: none; }
 
 /* ── AI CARD ── */
-.ai-card { grid-column: 1; }
+.ai-card { }
 .btn-ai { width: 100%; flex: none; }
 .btn-ai:hover:not(:disabled) { color: var(--accent); }
 
