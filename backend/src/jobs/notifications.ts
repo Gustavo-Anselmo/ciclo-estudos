@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import path from 'path'
 import cron from 'node-cron'
-import { generateText } from '../lib/gemini.js'
+import { askGroq } from '../lib/groqClient.js'
 import { getAuthenticatedCalendar } from '../lib/tokenStore.js'
 
 // ── types ──────────────────────────────────────────────────────────────────────
@@ -157,7 +157,7 @@ Total de eventos na agenda hoje: ${allEvents.length}
 
 Responda em português, de forma direta e motivadora, em no máximo 3 linhas. Sem bullet points, sem markdown.`
 
-  return generateText(prompt)
+  return askGroq(prompt)
 }
 
 export async function buildEndOfBlockReminder(
@@ -188,7 +188,7 @@ ${nextSlotText}
 
 Dê uma recomendação curta e direta do que fazer no próximo horário livre. Máximo 2 linhas, em português, sem markdown.`
 
-  return generateText(prompt)
+  return askGroq(prompt)
 }
 
 // ── cron jobs ─────────────────────────────────────────────────────────────────

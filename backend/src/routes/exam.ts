@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { getAuthenticatedCalendar } from '../lib/tokenStore.js'
 import { USER_CONTEXT } from './recommendation.js'
-import { generateText } from '../lib/gemini.js'
+import { askGroq } from '../lib/groqClient.js'
 
 // ── tipos ─────────────────────────────────────────────────────────────────────
 
@@ -249,7 +249,7 @@ export async function examRoutes(app: FastifyInstance) {
       // ── 4. Chamar Gemini ──────────────────────────────────────────────────
       let rawText: string
       try {
-        rawText = await generateText(buildExamPrompt(request.body, freeSlots))
+        rawText = await askGroq(buildExamPrompt(request.body, freeSlots))
       } catch (err: unknown) {
         app.log.error(err, 'Gemini call failed for exam plan')
         const message = err instanceof Error ? err.message : String(err)

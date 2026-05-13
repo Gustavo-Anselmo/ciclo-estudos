@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { generateText, parseGeminiJSON } from '../lib/gemini.js'
+import { askGroq, parseAIJSON } from '../lib/groqClient.js'
 import { USER_CONTEXT } from './recommendation.js'
 
 // ── types ─────────────────────────────────────────────────────────────────────
@@ -149,8 +149,8 @@ export async function progressRoutes(app: FastifyInstance) {
       }
 
       try {
-        const raw = await generateText(buildPrompt(subjectsWithData, totalStudiedMinutes))
-        geminiData = parseGeminiJSON<typeof geminiData>(raw)
+        const raw = await askGroq(buildPrompt(subjectsWithData, totalStudiedMinutes))
+        geminiData = parseAIJSON<typeof geminiData>(raw)
       } catch (err) {
         app.log.error(err, 'Gemini failed for progress diagnosis — using fallback')
         const mostNeglected = subjectsWithData.find((s) => s.studiedMinutes === 0)

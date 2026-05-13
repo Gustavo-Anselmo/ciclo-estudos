@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { generateText, parseGeminiJSON } from '../lib/gemini.js'
+import { askGroq, parseAIJSON } from '../lib/groqClient.js'
 
 interface SessionToday {
   subject: string
@@ -109,7 +109,7 @@ export async function recommendationRoutes(app: FastifyInstance) {
     async (request, reply) => {
       let rawText: string
       try {
-        rawText = await generateText(buildPrompt(request.body))
+        rawText = await askGroq(buildPrompt(request.body))
       } catch (err: unknown) {
         app.log.error(err, 'Gemini call failed')
         const message = err instanceof Error ? err.message : String(err)
@@ -118,7 +118,7 @@ export async function recommendationRoutes(app: FastifyInstance) {
 
       let parsed: { recommendation: string; reasoning: string }
       try {
-        parsed = parseGeminiJSON<{ recommendation: string; reasoning: string }>(rawText)
+        parsed = parseAIJSON<{ recommendation: string; reasoning: string }>(rawText)
       } catch {
         return reply.status(500).send({ error: 'AI_PARSE_ERROR', raw: rawText })
       }
