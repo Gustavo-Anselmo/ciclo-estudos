@@ -20,14 +20,25 @@ process.on('unhandledRejection', (reason) => {
 
 const app = Fastify({ logger: true })
 
+const ALLOWED_ORIGINS = new Set([
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  env.FRONTEND_URL,
+])
+
 await app.register(cors, {
-  origin: Array.from(new Set([
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:5500',
-    'http://127.0.0.1:5500',
-    env.FRONTEND_URL,
-  ])),
+  origin: (origin, cb) => {
+    // no origin = same-origin or non-browser (curl, Postman, server-to-server)
+    if (!origin) { cb(null, true); return }
+    // exact match against known origins
+    if (ALLOWED_ORIGINS.has(origin)) { cb(null, true); return }
+    // accept any Render subdomain (handles mismatched FRONTEND_URL env var)
+    if (/^https:\/\/[^/]+\.onrender\.com$/.test(origin)) { cb(null, true); return }
+    app.log.warn({ origin }, 'CORS: origin rejected')
+    cb(null, false)
+  },
   credentials: true,
 })
 
