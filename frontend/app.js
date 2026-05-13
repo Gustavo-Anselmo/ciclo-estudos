@@ -247,7 +247,7 @@ function finishSession() {
       document.getElementById('timer-status').textContent = 'parado';
       document.getElementById('timer-card').classList.remove('running');
       updateTimerDisplay(); updatePauseDisplay(); updateSidebarDot();
-      renderGoalProgress(); renderDashboard();
+      renderGoalProgress(); renderDashboard(); buildConsistencyGraph();
     }
   });
 }
@@ -599,7 +599,145 @@ function getSubjectStats() {
   return Object.entries(stats).map(([name,d]) => ({ name, total:d.total, week:d.week, month:d.month, today:d.today, days:d.days.size })).sort((a,b) => b.total - a.total);
 }
 
-function renderHistory() { renderHistSummary(); updateHistSubjectFilter(); histState.tab === 'sessions' ? renderHistSessions() : renderHistSubjects(); }
+function buildConsistencyGraph() {
+  const graphEl = document.getElementById('consistency-graph');
+  const subEl   = document.getElementById('consistency-sub');
+  if (!graphEl) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Build daily map: YYYY-MM-DD → total seconds
+  const dailyMap = {};
+  state.sessions.forEach(s => {
+    const d = new Date(s.end);
+    const key = d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+    dailyMap[key] = (dailyMap[key] || 0) + s.duration;
+  });
+
+  // 364-day range
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - 363);
+
+  // Grid starts on the Sunday on or before startDate
+  const gridStart = new Date(startDate);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+
+  // Count active days in range
+  let activeDays = 0;
+  for (const [key, secs] of Object.entries(dailyMap)) {
+    const d = new Date(key);
+    if (d >= startDate && d <= today && secs > 0) activeDays++;
+  }
+  if (subEl) subEl.textContent = `${activeDays} dia${activeDays !== 1 ? 's' : ''} estudados no último ano`;
+
+  const COLORS = [
+    'var(--surface3)',
+    'rgba(77,159,255,0.2)',
+    'rgba(77,159,255,0.4)',
+    'rgba(77,159,255,0.65)',
+    'var(--accent)',
+  ];
+  const MONTH_NAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const DAY_LABELS  = ['Dom', '', 'Ter', '', 'Qui', '', 'Sab'];
+
+  // Generate week columns
+  const weeks = [];
+  const cursor = new Date(gridStart);
+  while (cursor <= today) {
+    const week = [];
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(cursor);
+      day.setDate(day.getDate() + d);
+      if (day < startDate || day > today) {
+        week.push({ date: day, secs: 0, level: -1 });
+      } else {
+        const key = day.getFullYear() + '-' +
+          String(day.getMonth() + 1).padStart(2, '0') + '-' +
+          String(day.getDate()).padStart(2, '0');
+        const secs = dailyMap[key] || 0;
+        const h = secs / 3600;
+        const level = h === 0 ? 0 : h <= 1 ? 1 : h <= 2 ? 2 : h <= 4 ? 3 : 4;
+        week.push({ date: day, secs, level });
+      }
+    }
+    weeks.push(week);
+    cursor.setDate(cursor.getDate() + 7);
+  }
+
+  // Month label for each column
+  const monthLabels = weeks.map((week, wi) => {
+    const firstReal = week.find(c => c.level !== -1);
+    if (!firstReal) return '';
+    const m = firstReal.date.getMonth();
+    if (wi === 0) return MONTH_NAMES[m];
+    for (let pi = wi - 1; pi >= 0; pi--) {
+      const prevReal = weeks[pi].find(c => c.level !== -1);
+      if (prevReal) return prevReal.date.getMonth() !== m ? MONTH_NAMES[m] : '';
+    }
+    return MONTH_NAMES[m];
+  });
+
+  // Tooltip formatter
+  const fmtTip = (day, secs) => {
+    const dd = String(day.getDate()).padStart(2, '0');
+    const mm = String(day.getMonth() + 1).padStart(2, '0');
+    const yy = day.getFullYear();
+    if (!secs) return `${dd}/${mm}/${yy} — Nenhum estudo`;
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const parts = [];
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0 || h === 0) parts.push(`${m}min`);
+    return `${dd}/${mm}/${yy} — ${parts.join(' ')} estudados`;
+  };
+
+  // Build HTML
+  let html = '<div class="cg-wrap"><div class="cg-body">';
+
+  // Day labels column
+  html += '<div class="cg-day-labels">';
+  DAY_LABELS.forEach(l => { html += `<div class="cg-day-label">${l}</div>`; });
+  html += '</div>';
+
+  // Weeks area (month row + cell grid)
+  html += '<div class="cg-weeks-area">';
+
+  html += '<div class="cg-months-row">';
+  weeks.forEach((_, wi) => { html += `<div class="cg-month-slot">${monthLabels[wi]}</div>`; });
+  html += '</div>';
+
+  html += '<div class="cg-grid">';
+  weeks.forEach(week => {
+    html += '<div class="cg-col">';
+    week.forEach(cell => {
+      if (cell.level === -1) {
+        html += '<div class="cg-cell" style="background:transparent;pointer-events:none"></div>';
+      } else {
+        const tip = fmtTip(cell.date, cell.secs).replace(/"/g, '&quot;');
+        html += `<div class="cg-cell" style="background:${COLORS[cell.level]}" title="${tip}"></div>`;
+      }
+    });
+    html += '</div>';
+  });
+  html += '</div>'; // cg-grid
+  html += '</div>'; // cg-weeks-area
+  html += '</div>'; // cg-body
+
+  // Legend
+  html += '<div class="cg-legend">';
+  html += '<span class="cg-legend-label">Menos</span>';
+  COLORS.forEach(c => { html += `<div class="cg-cell" style="background:${c}"></div>`; });
+  html += '<span class="cg-legend-label">Mais</span>';
+  html += '</div>';
+
+  html += '</div>'; // cg-wrap
+  graphEl.innerHTML = html;
+}
+
+function renderHistory() { buildConsistencyGraph(); renderHistSummary(); updateHistSubjectFilter(); histState.tab === 'sessions' ? renderHistSessions() : renderHistSubjects(); }
 
 function renderHistSummary() {
   const ts = getTodayStart(), ws = getWeekStart(), ms = getMonthStart();
