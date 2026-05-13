@@ -485,6 +485,23 @@ header {
 .btn-exam { width: 100%; flex: none; margin-top: 12px; }
 .btn-exam:hover:not(:disabled) { color: var(--accent); }
 
+/* ── CONSISTENCY GRAPH ── */
+.cg-card { margin-bottom: 14px; }
+.cg-subtitle { font-size: 11px; color: var(--text-dim); margin-top: -4px; margin-bottom: 14px; }
+.cg-wrap { overflow-x: auto; padding-bottom: 4px; }
+.cg-body { display: inline-flex; gap: 4px; align-items: flex-start; }
+.cg-day-labels { display: flex; flex-direction: column; gap: 3px; margin-top: 15px; }
+.cg-day-label { height: 10px; font-size: 9px; color: var(--text-dim); line-height: 10px; white-space: nowrap; text-align: right; min-width: 22px; }
+.cg-weeks-area { display: flex; flex-direction: column; gap: 2px; }
+.cg-months-row { display: flex; gap: 3px; height: 13px; }
+.cg-month-slot { width: 10px; font-size: 9px; color: var(--text-dim); line-height: 13px; overflow: visible; white-space: nowrap; flex-shrink: 0; }
+.cg-grid { display: flex; gap: 3px; }
+.cg-col { display: flex; flex-direction: column; gap: 3px; }
+.cg-cell { width: 10px; height: 10px; border-radius: 2px; opacity: 0.7; transition: opacity 0.15s; cursor: default; flex-shrink: 0; }
+.cg-cell:hover { opacity: 1; }
+.cg-legend { display: flex; align-items: center; gap: 3px; justify-content: flex-end; margin-top: 10px; }
+.cg-legend-label { font-size: 9px; color: var(--text-dim); margin: 0 2px; }
+
 /* ── HEADER RIGHT ── */
 .header-right { display: flex; align-items: center; gap: 8px; }
 
