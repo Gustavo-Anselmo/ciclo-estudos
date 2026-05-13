@@ -111,23 +111,23 @@ export async function recommendationRoutes(app: FastifyInstance) {
       try {
         rawText = await askGroq(buildPrompt(request.body))
       } catch (err: unknown) {
-        app.log.error(err, 'Gemini call failed')
+        app.log.error(err, 'Groq call failed')
         const message = err instanceof Error ? err.message : String(err)
-        return reply.status(500).send({ error: 'AI_ERROR', message })
+        return reply.code(500).send({ error: 'AI_ERROR', message })
       }
 
       let parsed: { recommendation: string; reasoning: string }
       try {
         parsed = parseAIJSON<{ recommendation: string; reasoning: string }>(rawText)
       } catch {
-        return reply.status(500).send({ error: 'AI_PARSE_ERROR', raw: rawText })
+        return reply.code(500).send({ error: 'AI_PARSE_ERROR', raw: rawText })
       }
 
-      if (!parsed.recommendation) {
-        return reply.status(500).send({ error: 'AI_PARSE_ERROR', raw: rawText })
+      if (!parsed?.recommendation) {
+        return reply.code(500).send({ error: 'AI_PARSE_ERROR', raw: rawText })
       }
 
-      return reply.send({
+      return reply.code(200).send({
         recommendation: parsed.recommendation,
         reasoning: parsed.reasoning ?? '',
       })
