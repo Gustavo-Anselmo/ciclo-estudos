@@ -35,7 +35,7 @@
 
   --mono: 'DM Mono', monospace;
   --sans: 'DM Sans', sans-serif;
-  --sidebar-w: 44px;
+  --sidebar-w: 200px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,11 +60,41 @@ body {
   border-right: 1px solid var(--surface3);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 16px 0;
-  gap: 4px;
+  align-items: flex-start;
+  padding: 0;
   flex-shrink: 0;
   z-index: 10;
+  position: relative;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  width: 100%;
+  padding: 20px 16px 24px;
+  border-bottom: 1px solid var(--surface3);
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+.sidebar-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-title {
+  display: block;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--accent);
+  letter-spacing: 2px;
+  line-height: 1.2;
+}
+.logo-sub {
+  display: block;
+  font-weight: 400;
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 3px;
+  margin-top: 2px;
 }
 
 .nav-icon {
@@ -92,6 +122,95 @@ body {
   width: 3px; height: 20px;
   background: var(--accent);
   border-radius: 0 2px 2px 0;
+}
+
+/* Sidebar-specific nav overrides */
+.left-sidebar .nav-icon {
+  width: 100%;
+  height: auto;
+  padding: 10px 16px;
+  justify-content: flex-start;
+  gap: 10px;
+  border-radius: 8px;
+  text-align: left;
+}
+.left-sidebar .nav-icon.active {
+  background: rgba(77,159,255,0.08);
+}
+.left-sidebar .nav-icon.active .nav-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.nav-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: inherit;
+  white-space: nowrap;
+}
+
+/* ── THEME COLOR PICKER ── */
+.theme-btn {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  width: 100%;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-family: var(--sans);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  transition: color 0.15s;
+}
+.theme-btn:hover { color: var(--text-muted); }
+
+.theme-popover {
+  position: absolute;
+  bottom: 52px;
+  left: 12px;
+  background: var(--surface3);
+  border: 1px solid var(--surface4);
+  border-radius: 10px;
+  padding: 12px;
+  width: 176px;
+  z-index: 200;
+  display: none;
+}
+.theme-popover.open { display: block; }
+.theme-popover-title {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.theme-swatches {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.color-swatch:hover { border-color: rgba(255,255,255,0.35); transform: scale(1.12); }
+.theme-color-input {
+  width: 100%;
+  height: 30px;
+  border: 1px solid var(--surface4);
+  border-radius: 6px;
+  background: var(--surface2);
+  cursor: pointer;
+  padding: 2px;
 }
 
 /* ── NAV DOT (timer indicator) ── */

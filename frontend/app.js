@@ -96,6 +96,8 @@ function save() {
   }
 }
 function load() {
+  const savedAccent = localStorage.getItem('ciclo-accent-color')
+  if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent)
   const raw = localStorage.getItem('study-cycle');
   if (raw) { try { state = JSON.parse(raw); } catch(e) {} }
   if (!state.constantSubjects) state.constantSubjects = [];
@@ -1200,6 +1202,28 @@ async function checkCalendarAuth() {
     btn.classList.remove('cal-connected')
   }
 }
+
+// ── THEME COLOR ──
+function applyAccent(color) {
+  document.documentElement.style.setProperty('--accent', color)
+  localStorage.setItem('ciclo-accent-color', color)
+  const picker = document.getElementById('theme-color-input')
+  if (picker) picker.value = color
+}
+
+function toggleThemePopover(e) {
+  e.stopPropagation()
+  const p = document.getElementById('theme-popover')
+  if (!p) return
+  p.classList.toggle('open')
+}
+
+document.addEventListener('click', (e) => {
+  const p = document.getElementById('theme-popover')
+  if (p && p.classList.contains('open') && !p.contains(e.target)) {
+    p.classList.remove('open')
+  }
+})
 
 // ── EXAM PLAN ──
 async function handleExamPlan() {
