@@ -17,6 +17,9 @@
     <div class="page-sub" id="page-sub">bem-vindo de volta</div>
   </div>
   <div class="header-right">
+    <button class="mobile-palette-btn" onclick="toggleThemePopover(event)" title="Cor do tema">
+      <svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="var(--accent)"/></svg>
+    </button>
     <div class="clock-badge" id="clock-badge">--:--</div>
     <button class="notif-bell-btn cal-icon-btn" id="cal-icon-btn" onclick="onCalIconClick()" title="Google Calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
     <div id="notif-bell-wrap" class="notif-bell-wrap">
@@ -70,18 +73,6 @@
     <span class="nav-dot" id="nav-dot-6"></span>
   </button>
 
-  <div id="theme-popover" class="theme-popover">
-    <div class="theme-popover-title">Cor predominante</div>
-    <div class="theme-swatches">
-      <div class="color-swatch" style="background:#4d9fff" onclick="applyAccent('#4d9fff')" title="Azul"></div>
-      <div class="color-swatch" style="background:#3ddc84" onclick="applyAccent('#3ddc84')" title="Verde"></div>
-      <div class="color-swatch" style="background:#a78bfa" onclick="applyAccent('#a78bfa')" title="Roxo"></div>
-      <div class="color-swatch" style="background:#f0a500" onclick="applyAccent('#f0a500')" title="Laranja"></div>
-      <div class="color-swatch" style="background:#ff5c5c" onclick="applyAccent('#ff5c5c')" title="Vermelho"></div>
-      <div class="color-swatch" style="background:#00d4ff" onclick="applyAccent('#00d4ff')" title="Ciano"></div>
-    </div>
-    <input type="color" class="theme-color-input" id="theme-color-input" value="#4d9fff" oninput="applyAccent(this.value)">
-  </div>
   <button class="theme-btn" onclick="toggleThemePopover(event)">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01A1.5 1.5 0 0 1 14.22 18H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/><circle cx="6.5" cy="11.5" r="1" fill="currentColor"/><circle cx="9.5" cy="7.5" r="1" fill="currentColor"/><circle cx="14.5" cy="7.5" r="1" fill="currentColor"/><circle cx="17.5" cy="11.5" r="1" fill="currentColor"/></svg>
     Cor do tema
@@ -298,12 +289,40 @@
 </div>
 
 <!-- MOBILE NAV -->
+<div id="theme-popover" class="theme-popover">
+  <div class="theme-popover-title">Cor predominante</div>
+  <div class="theme-swatches">
+    <div class="color-swatch" style="background:#4d9fff" onclick="applyAccent('#4d9fff')" title="Azul"></div>
+    <div class="color-swatch" style="background:#3ddc84" onclick="applyAccent('#3ddc84')" title="Verde"></div>
+    <div class="color-swatch" style="background:#a78bfa" onclick="applyAccent('#a78bfa')" title="Roxo"></div>
+    <div class="color-swatch" style="background:#f0a500" onclick="applyAccent('#f0a500')" title="Laranja"></div>
+    <div class="color-swatch" style="background:#ff5c5c" onclick="applyAccent('#ff5c5c')" title="Vermelho"></div>
+    <div class="color-swatch" style="background:#00d4ff" onclick="applyAccent('#00d4ff')" title="Ciano"></div>
+  </div>
+  <input type="color" class="theme-color-input" id="theme-color-input" value="#4d9fff" oninput="applyAccent(this.value)">
+</div>
+
 <div class="mobile-nav">
-  <button class="nav-icon active" onclick="showView('dashboard')">⊞<span class="nav-dot" id="nav-dot-3"></span></button>
-  <button class="nav-icon" onclick="showView('subjects')">☰<span class="nav-dot" id="nav-dot-4"></span></button>
-  <button class="nav-icon" onclick="showView('history')">◷<span class="nav-dot" id="nav-dot-5"></span></button>
-  <button class="nav-icon" onclick="showView('planning')">📋<span class="nav-dot"></span></button>
-  <button class="nav-icon" onclick="showView('progress')">◎<span class="nav-dot" id="nav-dot-7"></span></button>
+  <button class="nav-icon active" onclick="showView('dashboard')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span class="nav-dot" id="nav-dot-3"></span>
+  </button>
+  <button class="nav-icon" onclick="showView('subjects')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>
+    <span class="nav-dot" id="nav-dot-4"></span>
+  </button>
+  <button class="nav-icon" onclick="showView('history')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+    <span class="nav-dot" id="nav-dot-5"></span>
+  </button>
+  <button class="nav-icon" onclick="showView('planning')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+    <span class="nav-dot"></span>
+  </button>
+  <button class="nav-icon" onclick="showView('progress')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span class="nav-dot" id="nav-dot-7"></span>
+  </button>
 </div>
 
 <!-- MODAL -->
