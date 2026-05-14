@@ -1,6 +1,7 @@
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
   : 'https://ciclo-estudos-api.onrender.com'
+let USER_ID = localStorage.getItem('ciclo-user-id') || null
 
 // ── FETCH WITH TIMEOUT ──
 // timeoutMs: hard abort (default 35s covers Render cold start ~30s)
@@ -60,13 +61,48 @@ let pomoFocusSecs    = 0;         // accumulated focus time in current session
 let pomoBreakInterval = null;
 
 // ── PERSIST ──
-function save() { localStorage.setItem('study-cycle', JSON.stringify(state)); }
+function save() {
+  localStorage.setItem('study-cycle', JSON.stringify(state));
+  if (USER_ID) {
+    fetch(`${API_URL}/api/sync/state`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: USER_ID, state })
+    }).catch(() => {})
+  }
+}
 function load() {
   const raw = localStorage.getItem('study-cycle');
   if (raw) { try { state = JSON.parse(raw); } catch(e) {} }
   if (!state.constantSubjects) state.constantSubjects = [];
   // Normalize subjects: strings → {name, dailyGoal}
   state.subjects = state.subjects.map(s => typeof s === 'string' ? { name: s, dailyGoal: 0 } : s);
+  initSync().then(() => renderDashboard())
+}
+
+// ── SYNC ──
+async function initSync() {
+  try {
+    const res = await fetch(`${API_URL}/api/sync/init`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: USER_ID })
+    })
+    if (!res.ok) return
+    const data = await res.json()
+    localStorage.setItem('ciclo-user-id', data.userId)
+    USER_ID = data.userId
+    const remote = data.state
+    if (remote.subjects && remote.subjects.length > 0) {
+      state.subjects = remote.subjects
+      state.sessions = remote.sessions ?? []
+      state.constantSubjects = remote.constantSubjects ?? []
+      state.currentIndex = remote.currentIndex ?? 0
+    }
+    save()
+  } catch {
+    // Server offline — continue with localStorage
+  }
 }
 
 // ── AUDIO / VIBRATION ──
@@ -226,10 +262,18 @@ function finishSession() {
       timerInterval = null; pauseInterval = null; pomoBreakInterval = null;
       timerRunning = false;
 
-      state.sessions.unshift({ subject: subjectName, start: sessionStart, end: new Date().toISOString(), duration, pauseDuration: pauseSeconds });
+      const newSession = { id: crypto.randomUUID(), subject: subjectName, start: sessionStart, end: new Date().toISOString(), duration, pauseDuration: pauseSeconds };
+      state.sessions.unshift(newSession);
       if (!isConstant && state.subjects.length > 0) state.currentIndex = (state.currentIndex + 1) % state.subjects.length;
       studyingConstant = null;
       save();
+      if (USER_ID) {
+        fetch(`${API_URL}/api/sync/session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: USER_ID, session: newSession })
+        }).catch(() => {})
+      }
 
       playBeep(); doVibrate([200, 100, 200]);
       showToast(`${subjectName} — ${formatTime(duration)} registrado`);
