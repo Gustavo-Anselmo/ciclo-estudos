@@ -51,7 +51,6 @@ body {
   height: 100vh;
   overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  overscroll-behavior-y: contain;
 }
 
 /* ── SIDEBAR ── */
@@ -279,7 +278,7 @@ header {
 }
 
 /* ── CONTENT ── */
-.content { flex: 1; overflow-y: auto; padding: 24px 28px 32px; overscroll-behavior-y: contain; }
+.content { flex: 1; overflow-y: auto; padding: 24px 28px 32px; }
 .content::-webkit-scrollbar { width: 4px; }
 .content::-webkit-scrollbar-track { background: transparent; }
 .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
