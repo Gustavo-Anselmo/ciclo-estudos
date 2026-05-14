@@ -120,6 +120,7 @@ async function initSync() {
     const data = await res.json()
     localStorage.setItem('ciclo-user-id', data.userId)
     USER_ID = data.userId
+    updateUserIdDisplay()
     const remote = data.state
     if (remote.subjects && remote.subjects.length > 0) {
       state.subjects = remote.subjects
@@ -1107,6 +1108,42 @@ async function handleAIRecommendation() {
   renderAICard(data ?? 'error')
 }
 
+// ── DEVICE SYNC ──
+function updateUserIdDisplay() {
+  const el = document.getElementById('user-id-display')
+  if (!el) return
+  el.textContent = USER_ID ? USER_ID.slice(0, 8) + '...' : '—'
+}
+
+function copyUserId() {
+  if (!USER_ID) { showToast('Nenhum ID disponível'); return; }
+  navigator.clipboard.writeText(USER_ID)
+    .then(() => showToast('ID copiado!'))
+    .catch(() => {
+      const el = document.createElement('textarea')
+      el.value = USER_ID
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+      showToast('ID copiado!')
+    })
+}
+
+function applyUserId() {
+  const input = document.getElementById('sync-id-input')
+  const novoId = input.value.trim()
+  if (!novoId) { showToast('Cole um ID válido'); return; }
+  localStorage.setItem('ciclo-user-id', novoId)
+  USER_ID = novoId
+  input.value = ''
+  initSync().then(() => {
+    updateUserIdDisplay()
+    renderDashboard()
+    showToast('Dispositivo sincronizado!')
+  })
+}
+
 // ── CALENDAR AUTH ──
 function connectCalendar() {
   window.open(`${API_URL}/auth/google`, '_blank');
@@ -1219,7 +1256,7 @@ function showView(name) {
   const [title, sub] = viewMeta[name] || ['',''];
   document.getElementById('page-title').textContent = title;
   document.getElementById('page-sub').textContent = sub;
-  if (name === 'subjects')  renderSubjects();
+  if (name === 'subjects')  { renderSubjects(); updateUserIdDisplay(); }
   if (name === 'history')   renderHistory();
   if (name === 'dashboard') renderDashboard();
   if (name === 'progress')  renderProgress();
