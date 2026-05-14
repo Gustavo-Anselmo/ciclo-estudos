@@ -1145,12 +1145,18 @@ function applyUserId() {
 }
 
 // ── CALENDAR AUTH ──
-function connectCalendar() {
-  window.open(`${API_URL}/auth/google`, '_blank');
+function onCalIconClick() {
+  const btn = document.getElementById('cal-icon-btn')
+  if (btn && btn.classList.contains('cal-connected')) {
+    showToast('Google Calendar conectado ✓')
+  } else {
+    window.open(`${API_URL}/auth/google`, '_blank')
+  }
 }
 
 async function checkCalendarAuth() {
-  const banner = document.getElementById('auth-banner')
+  const btn = document.getElementById('cal-icon-btn')
+  if (!btn) return
   try {
     const res = await fetchWithTimeout(`${API_URL}/api/calendar/status`)
     let authenticated = false
@@ -1159,20 +1165,16 @@ async function checkCalendarAuth() {
       authenticated = data.authenticated === true
     } catch { /* non-JSON body — treat as unauthenticated */ }
 
-    if (!banner) return
     if (authenticated) {
-      banner.remove()
+      btn.classList.add('cal-connected')
+      btn.classList.remove('cal-disconnected')
     } else {
-      const textEl = banner.querySelector('.auth-banner-text')
-      if (textEl) textEl.textContent = 'Conecte o Google Calendar para habilitar o planejamento de provas'
-      banner.style.display = ''
+      btn.classList.add('cal-disconnected')
+      btn.classList.remove('cal-connected')
     }
   } catch {
-    if (banner) {
-      const textEl = banner.querySelector('.auth-banner-text')
-      if (textEl) textEl.textContent = 'Servidor iniciando, tente novamente em alguns segundos'
-      banner.style.display = ''
-    }
+    btn.classList.add('cal-disconnected')
+    btn.classList.remove('cal-connected')
   }
 }
 
