@@ -570,6 +570,7 @@ header {
   .left-sidebar { display: none; }
   header { margin-left: 0; }
   .body-layout { margin-left: 0; }
+  #dash-stats { grid-template-columns: repeat(2, 1fr) !important; }
   .subject-item .icon-btn.edit,
   .subject-item .icon-btn.del { opacity: 1; }
   .mobile-nav {

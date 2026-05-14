@@ -378,6 +378,49 @@ function renderGoalProgress() {
 }
 
 // ── DASHBOARD ──
+function getDashGreeting() {
+  const h = new Date().getHours()
+  if (h >= 5 && h < 12) return 'bom dia, foco total!'
+  if (h >= 12 && h < 18) return 'boa tarde, bora estudar!'
+  if (h >= 18) return 'boa noite, mais um bloco!'
+  return 'ainda acordado? foco!'
+}
+
+function renderDashStats() {
+  const el = document.getElementById('dash-stats')
+  if (!el) return
+  const todaySec = state.sessions.filter(s => new Date(s.end) >= getTodayStart()).reduce((a, s) => a + s.duration, 0)
+  const weekSec  = state.sessions.filter(s => new Date(s.end) >= getWeekStart()).reduce((a, s) => a + s.duration, 0)
+  const streak   = calcStreak()
+  const total    = state.sessions.length
+
+  const fmtT = (secs) => {
+    const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60)
+    return h > 0 ? `${h}h ${m}min` : `${m}min`
+  }
+  const card = (icon, label, value, color = 'var(--text)') =>
+    `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px">
+        ${icon}
+        <span style="font-size:9px;letter-spacing:0.08em;color:var(--text-dim);text-transform:uppercase;font-family:var(--mono)">${label}</span>
+      </div>
+      <div style="font-size:18px;font-weight:600;color:${color};line-height:1">${value}</div>
+    </div>`
+
+  const iClock = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>`
+  const iCal   = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`
+  const iFlame = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${streak > 0 ? 'var(--orange)' : 'var(--text-dim)'}" stroke-width="2" stroke-linecap="round"><path d="M12 2c0 6-6 8-6 14a6 6 0 0 0 12 0c0-6-6-8-6-14z"/></svg>`
+  const iList  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>`
+
+  el.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px'
+  el.innerHTML = [
+    card(iClock, 'tempo hoje',  fmtT(todaySec)),
+    card(iCal,   'esta semana', fmtT(weekSec)),
+    card(iFlame, 'sequência',   streak > 0 ? `${streak} ${streak === 1 ? 'dia' : 'dias'}` : '—', streak > 0 ? 'var(--orange)' : 'var(--text-dim)'),
+    card(iList,  'total',       `${total} ${total === 1 ? 'sessão' : 'sessões'}`),
+  ].join('')
+}
+
 function renderDashboard() {
   const nameEl    = document.getElementById('current-subject-name');
   const nextList  = document.getElementById('next-list');
@@ -390,7 +433,7 @@ function renderDashboard() {
     nextList.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:4px 0">—</div>';
     cycleEl.innerHTML = '';
     if (todayList) todayList.innerHTML = '<div style="font-size:12px;color:var(--text-dim)">Nenhuma sessão hoje</div>';
-    renderConstantDashboard(); renderGoalProgress();
+    renderConstantDashboard(); renderGoalProgress(); renderDashStats();
     return;
   }
 
@@ -424,7 +467,7 @@ function renderDashboard() {
         `<div style="font-size:12px;color:var(--text-muted);padding:3px 0">${name} — ${formatShort(time)}</div>`
       ).join('');
 
-  renderConstantDashboard(); renderGoalProgress();
+  renderConstantDashboard(); renderGoalProgress(); renderDashStats();
 }
 
 // ── CONSTANT SUBJECTS ──
@@ -1304,7 +1347,7 @@ function showView(name) {
   allIcons.forEach((b,i) => b.classList.toggle('active', i%5 === map[name]));
   const [title, sub] = viewMeta[name] || ['',''];
   document.getElementById('page-title').textContent = title;
-  document.getElementById('page-sub').textContent = sub;
+  document.getElementById('page-sub').textContent = name === 'dashboard' ? getDashGreeting() : sub;
   if (name === 'subjects')  { renderSubjects(); updateUserIdDisplay(); }
   if (name === 'history')   renderHistory();
   if (name === 'dashboard') renderDashboard();
