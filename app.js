@@ -405,17 +405,17 @@ function renderDashStats() {
   }
 
   const card = (label, value, color = 'var(--text)') =>
-    `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:14px 16px">
+    `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:14px 16px;min-height:72px">
       <div style="font-size:9px;color:var(--text-dim);font-family:monospace;letter-spacing:1px;margin-bottom:6px">${label}</div>
       <div style="font-size:18px;font-weight:600;color:${color}">${value}</div>
     </div>`
 
   el.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px'
   el.innerHTML = [
-    card('TEMPO HOJE',  fmtSecs(todaySecs)),
-    card('ESTA SEMANA', fmtSecs(weekSecs)),
-    card('SEQUENCIA',   streak > 0 ? `${streak} ${streak === 1 ? 'dia' : 'dias'}` : '—', streak > 0 ? 'var(--orange)' : 'var(--text-dim)'),
-    card('TOTAL',       `${total} ${total === 1 ? 'sessao' : 'sessoes'}`),
+    card('TEMPO HOJE',      fmtSecs(todaySecs)),
+    card('ESTA SEMANA',     fmtSecs(weekSecs)),
+    card('SEQUÊNCIA',       streak > 0 ? `${streak} ${streak === 1 ? 'dia' : 'dias'}` : '—', streak > 0 ? 'var(--orange)' : 'var(--text-dim)'),
+    card('SESSÕES',         `${total}`),
   ].join('')
 }
 
