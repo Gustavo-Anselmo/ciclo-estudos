@@ -1276,7 +1276,26 @@ function showView(name) {
 
 // ── PLANNING VIEW ──
 function renderPlanning() {
-  // content is static HTML in view-planning
+  if (!document.getElementById('planning-header')) {
+    const container = document.querySelector('#view-planning > div')
+    if (container) {
+      container.insertAdjacentHTML('beforebegin', `
+        <div id="planning-header" style="max-width:600px;margin:0 auto 28px auto">
+          <h2 style="font-size:20px;font-weight:600;color:var(--text);margin:0 0 6px 0">Planejamento de Provas</h2>
+          <p style="font-size:13px;color:var(--text-muted);margin:0;line-height:1.6">Informe sua prova e a IA sugere os melhores momentos de estudo com base na sua agenda do Google Calendar.</p>
+        </div>`)
+    }
+  }
+  const btn = document.getElementById('exam-btn')
+  if (btn) {
+    Object.assign(btn.style, {
+      background: 'var(--accent)', color: '#000000', fontWeight: '700',
+      height: '44px', border: 'none', borderRadius: '8px',
+      cursor: 'pointer', transition: 'opacity 0.2s', width: '100%', opacity: '1',
+    })
+    btn.onmouseenter = () => { btn.style.opacity = '0.85' }
+    btn.onmouseleave = () => { btn.style.opacity = '1' }
+  }
 }
 
 // ── PROGRESS VIEW ──
