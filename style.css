@@ -55,7 +55,12 @@ body {
 
 /* ── SIDEBAR ── */
 .left-sidebar {
-  width: var(--sidebar-w);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 200px;
+  min-width: 200px;
   background: #080808;
   border-right: 1px solid var(--surface3);
   display: flex;
@@ -63,14 +68,13 @@ body {
   align-items: flex-start;
   padding: 0;
   flex-shrink: 0;
-  z-index: 10;
-  position: relative;
-  overflow-y: auto;
+  z-index: 50;
+  overflow: hidden;
 }
 
 .sidebar-logo {
   width: 100%;
-  padding: 20px 16px 24px;
+  padding: 20px 16px;
   border-bottom: 1px solid var(--surface3);
   margin-bottom: 8px;
   flex-shrink: 0;
@@ -79,11 +83,13 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
 }
 .logo-title {
   display: block;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--accent);
   letter-spacing: 2px;
   line-height: 1.2;
@@ -133,6 +139,9 @@ body {
   gap: 10px;
   border-radius: 8px;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 .left-sidebar .nav-icon.active {
   background: rgba(77,159,255,0.08);
@@ -143,7 +152,7 @@ body {
 }
 
 .nav-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: inherit;
   white-space: nowrap;
@@ -151,21 +160,21 @@ body {
 
 /* ── THEME COLOR PICKER ── */
 .theme-btn {
-  position: absolute;
-  bottom: 16px;
-  left: 0;
+  margin-top: auto;
+  flex-shrink: 0;
   width: 100%;
-  padding: 8px 16px;
+  padding: 10px 16px;
   background: none;
   border: none;
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: 12px;
   font-family: var(--sans);
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   text-align: left;
+  white-space: nowrap;
   transition: color 0.15s;
 }
 .theme-btn:hover { color: var(--text-muted); }
@@ -230,11 +239,12 @@ body {
 }
 
 /* ── BODY LAYOUT ── */
-.body-layout { flex: 1; display: flex; overflow: hidden; min-width: 0; }
+.body-layout { flex: 1; display: flex; overflow: hidden; min-width: 0; margin-left: 200px; }
 .main-wrap   { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
 /* ── HEADER ── */
 header {
+  margin-left: 200px;
   padding: 16px 28px;
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -558,6 +568,8 @@ header {
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   .left-sidebar { display: none; }
+  header { margin-left: 0; }
+  .body-layout { margin-left: 0; }
   .subject-item .icon-btn.edit,
   .subject-item .icon-btn.del { opacity: 1; }
   .mobile-nav {
