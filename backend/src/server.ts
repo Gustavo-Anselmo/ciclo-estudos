@@ -71,6 +71,9 @@ app.listen({ port, host: '0.0.0.0' }, (err) => {
   }
   scheduleNotifications()
   prisma.$connect()
-    .then(() => console.log('Database connected'))
+    .then(async () => {
+      const userCount = await prisma.user.count()
+      console.log(`Database connected — ${userCount} users`)
+    })
     .catch((err) => console.error('Database connection failed:', err))
 })
