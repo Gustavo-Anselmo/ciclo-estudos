@@ -147,6 +147,25 @@
         <button class="btn-add" onclick="addConstantSubject()">+ Adicionar</button>
       </div>
       <div id="const-manage-list"></div>
+
+      <hr class="section-divider">
+
+      <div class="section-header">
+        <div class="section-title">Dispositivos</div>
+      </div>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Use o mesmo ID para sincronizar seus dados entre dispositivos.</p>
+      <div style="margin-bottom:10px">
+        <span style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Seu ID:</span>
+        <span id="user-id-display" style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-left:6px">—</span>
+      </div>
+      <div style="margin-bottom:10px">
+        <button class="btn" style="width:100%" onclick="copyUserId()">Copiar meu ID</button>
+      </div>
+      <div class="add-form">
+        <input class="input" id="sync-id-input" placeholder="Cole seu ID aqui..." maxlength="36"
+          onkeydown="if(event.key==='Enter') applyUserId()">
+        <button class="btn-add" onclick="applyUserId()">Usar este ID</button>
+      </div>
     </div>
 
     <!-- PROGRESS -->
