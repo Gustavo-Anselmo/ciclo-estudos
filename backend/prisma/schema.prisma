@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(uuid())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  subjects         Subject[]
+  sessions         Session[]
+  constantSubjects String[]
+  currentIndex     Int       @default(0)
+}
+
+model Subject {
+  id        String   @id @default(uuid())
+  name      String
+  dailyGoal Int      @default(0)
+  order     Int      @default(0)
+  topics    Topic[]
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Topic {
+  id        String   @id @default(uuid())
+  text      String
+  completed Boolean  @default(false)
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Session {
+  id            String   @id @default(uuid())
+  subject       String
+  start         DateTime
+  end           DateTime
+  duration      Int
+  pauseDuration Int      @default(0)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

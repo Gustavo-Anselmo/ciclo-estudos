@@ -15,4 +15,5 @@ export const env = {
   GOOGLE_CLIENT_SECRET: requireEnv('GOOGLE_CLIENT_SECRET'),
   GOOGLE_REDIRECT_URI: requireEnv('GOOGLE_REDIRECT_URI'),
   FRONTEND_URL: requireEnv('FRONTEND_URL'),
+  DATABASE_URL: requireEnv('DATABASE_URL'),
 }
