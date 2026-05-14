@@ -1087,9 +1087,18 @@ function renderAICard(cardState) {
     btn.disabled = false;
     result.style.display = '';
     result.innerHTML = `
-      <p style="font-size:14px;color:var(--text);line-height:1.6;margin-bottom:8px">${cardState.recommendation}</p>
-      <p style="font-size:11px;color:var(--text-muted);line-height:1.5">${cardState.reasoning}</p>`;
+      <p style="font-size:15px;font-weight:600;color:var(--text);line-height:1.6;margin-bottom:8px">${cardState.recommendation}</p>
+      <button onclick="toggleAIReasoning(this)" style="font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:0">ver raciocínio ▾</button>
+      <p id="ai-reasoning" style="display:none;font-size:13px;color:var(--text-muted);line-height:1.6;margin-top:8px">${cardState.reasoning}</p>`;
   }
+}
+
+function toggleAIReasoning(btn) {
+  const p = document.getElementById('ai-reasoning');
+  if (!p) return;
+  const expanded = p.style.display !== 'none';
+  p.style.display = expanded ? 'none' : '';
+  btn.textContent = expanded ? 'ver raciocínio ▾' : 'ocultar ▴';
 }
 
 async function handleAIRecommendation() {
