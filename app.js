@@ -466,6 +466,8 @@ function renderDashboard() {
       ).join('');
 
   renderConstantDashboard(); renderGoalProgress(); renderDashStats();
+  const dashView = document.getElementById('view-dashboard')
+  if (dashView && !dashView.querySelector('.view-spacer')) dashView.insertAdjacentHTML('beforeend', '<div class="view-spacer" style="height:80px"></div>')
 }
 
 // ── CONSTANT SUBJECTS ──
@@ -659,6 +661,8 @@ function renderSubjects() {
       </div>
     </div>`;
   }).join('');
+  const subjView = document.getElementById('view-subjects')
+  if (subjView && !subjView.querySelector('.view-spacer')) subjView.insertAdjacentHTML('beforeend', '<div class="view-spacer" style="height:80px"></div>')
 }
 
 // ── HISTORY ──
@@ -849,7 +853,12 @@ function buildConsistencyGraph() {
   graphEl.innerHTML = html;
 }
 
-function renderHistory() { buildConsistencyGraph(); renderHistSummary(); updateHistSubjectFilter(); histState.tab === 'sessions' ? renderHistSessions() : renderHistSubjects(); }
+function renderHistory() {
+  buildConsistencyGraph(); renderHistSummary(); updateHistSubjectFilter();
+  histState.tab === 'sessions' ? renderHistSessions() : renderHistSubjects();
+  const histView = document.getElementById('view-history')
+  if (histView && !histView.querySelector('.view-spacer')) histView.insertAdjacentHTML('beforeend', '<div class="view-spacer" style="height:80px"></div>')
+}
 
 function renderHistSummary() {
   const ts = getTodayStart(), ws = getWeekStart(), ms = getMonthStart();
@@ -1375,6 +1384,8 @@ function renderPlanning() {
     btn.onmouseenter = () => { btn.style.opacity = '0.85' }
     btn.onmouseleave = () => { btn.style.opacity = '1' }
   }
+  const planView = document.getElementById('view-planning')
+  if (planView && !planView.querySelector('.view-spacer')) planView.insertAdjacentHTML('beforeend', '<div class="view-spacer" style="height:80px"></div>')
 }
 
 // ── PROGRESS VIEW ──
@@ -1462,11 +1473,13 @@ async function renderProgress() {
         <div class="progress-priority">▶&nbsp;${data.priorityAction}</div>
       </div>
       ${subjectsHTML}
-      <button class="progress-refresh-btn" onclick="renderProgress()">↺ Atualizar diagnóstico</button>`
+      <button class="progress-refresh-btn" onclick="renderProgress()">↺ Atualizar diagnóstico</button>
+      <div class="view-spacer" style="height:80px"></div>`
   } catch {
     container.innerHTML = `
       <p class="progress-error" style="color:var(--danger)">Não foi possível carregar o diagnóstico. Tente novamente.</p>
-      <button class="progress-refresh-btn" onclick="renderProgress()">↺ Tentar novamente</button>`
+      <button class="progress-refresh-btn" onclick="renderProgress()">↺ Tentar novamente</button>
+      <div class="view-spacer" style="height:80px"></div>`
   }
 }
 
