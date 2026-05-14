@@ -389,35 +389,33 @@ function getDashGreeting() {
 function renderDashStats() {
   const el = document.getElementById('dash-stats')
   if (!el) return
-  const todaySec = state.sessions.filter(s => new Date(s.end) >= getTodayStart()).reduce((a, s) => a + s.duration, 0)
-  const weekSec  = state.sessions.filter(s => new Date(s.end) >= getWeekStart()).reduce((a, s) => a + s.duration, 0)
-  const streak   = calcStreak()
-  const total    = state.sessions.length
 
-  const fmtT = (secs) => {
-    const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60)
-    return h > 0 ? `${h}h ${m}min` : `${m}min`
+  const todayStr = new Date().toDateString()
+  const todaySecs = state.sessions.filter(s => new Date(s.end).toDateString() === todayStr).reduce((acc, s) => acc + s.duration, 0)
+  const weekSecs  = state.sessions.filter(s => new Date(s.end) >= getWeekStart()).reduce((acc, s) => acc + s.duration, 0)
+  const streak    = calcStreak()
+  const total     = state.sessions.length
+
+  const fmtSecs = (secs) => {
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60)
+    if (h > 0) return m > 0 ? `${h}h ${m}min` : `${h}h`
+    if (m > 0) return `${m}min`
+    return secs > 0 ? `${secs}s` : '—'
   }
-  const card = (icon, label, value, color = 'var(--text)') =>
-    `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;align-items:center;gap:6px">
-        ${icon}
-        <span style="font-size:9px;letter-spacing:0.08em;color:var(--text-dim);text-transform:uppercase;font-family:var(--mono)">${label}</span>
-      </div>
-      <div style="font-size:18px;font-weight:600;color:${color};line-height:1">${value}</div>
-    </div>`
 
-  const iClock = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>`
-  const iCal   = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`
-  const iFlame = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${streak > 0 ? 'var(--orange)' : 'var(--text-dim)'}" stroke-width="2" stroke-linecap="round"><path d="M12 2c0 6-6 8-6 14a6 6 0 0 0 12 0c0-6-6-8-6-14z"/></svg>`
-  const iList  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>`
+  const card = (label, value, color = 'var(--text)') =>
+    `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:14px 16px">
+      <div style="font-size:9px;color:var(--text-dim);font-family:monospace;letter-spacing:1px;margin-bottom:6px">${label}</div>
+      <div style="font-size:18px;font-weight:600;color:${color}">${value}</div>
+    </div>`
 
   el.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px'
   el.innerHTML = [
-    card(iClock, 'tempo hoje',  fmtT(todaySec)),
-    card(iCal,   'esta semana', fmtT(weekSec)),
-    card(iFlame, 'sequência',   streak > 0 ? `${streak} ${streak === 1 ? 'dia' : 'dias'}` : '—', streak > 0 ? 'var(--orange)' : 'var(--text-dim)'),
-    card(iList,  'total',       `${total} ${total === 1 ? 'sessão' : 'sessões'}`),
+    card('TEMPO HOJE',  fmtSecs(todaySecs)),
+    card('ESTA SEMANA', fmtSecs(weekSecs)),
+    card('SEQUENCIA',   streak > 0 ? `${streak} ${streak === 1 ? 'dia' : 'dias'}` : '—', streak > 0 ? 'var(--orange)' : 'var(--text-dim)'),
+    card('TOTAL',       `${total} ${total === 1 ? 'sessao' : 'sessoes'}`),
   ].join('')
 }
 
