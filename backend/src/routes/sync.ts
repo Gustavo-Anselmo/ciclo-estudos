@@ -103,33 +103,41 @@ export async function syncRoutes(app: FastifyInstance) {
         data: { currentIndex: state.currentIndex, constantSubjects: state.constantSubjects },
       })
 
-      const incomingSubjectIds = state.subjects.map((s) => s.id)
+      const validSubjectIds = (state.subjects as any[])
+        .map((s) => s.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
       await tx.subject.deleteMany({
-        where: { userId, ...(incomingSubjectIds.length > 0 ? { id: { notIn: incomingSubjectIds } } : {}) },
+        where: { userId, ...(validSubjectIds.length > 0 ? { id: { notIn: validSubjectIds } } : {}) },
       })
 
-      for (const subject of state.subjects) {
+      for (const s of state.subjects as any[]) {
+        const subjectId = s.id && typeof s.id === 'string' ? s.id : crypto.randomUUID()
+
         await tx.subject.upsert({
-          where: { id: subject.id },
-          create: { id: subject.id, name: subject.name, dailyGoal: subject.dailyGoal, order: subject.order, userId },
-          update: { name: subject.name, dailyGoal: subject.dailyGoal, order: subject.order },
+          where: { id: subjectId },
+          create: { id: subjectId, name: s.name, dailyGoal: s.dailyGoal, order: s.order, userId },
+          update: { name: s.name, dailyGoal: s.dailyGoal, order: s.order },
         })
 
-        const incomingTopicIds = subject.topics.map((t) => t.id)
+        const validTopicIds = (s.topics as any[])
+          .map((t: any) => t.id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
         await tx.topic.deleteMany({
           where: {
-            subjectId: subject.id,
-            ...(incomingTopicIds.length > 0 ? { id: { notIn: incomingTopicIds } } : {}),
+            subjectId,
+            ...(validTopicIds.length > 0 ? { id: { notIn: validTopicIds } } : {}),
           },
         })
 
-        for (const topic of subject.topics) {
+        for (const t of s.topics as any[]) {
+          const topicId = t.id && typeof t.id === 'string' ? t.id : crypto.randomUUID()
+
           await tx.topic.upsert({
-            where: { id: topic.id },
-            create: { id: topic.id, text: topic.text, completed: topic.completed, subjectId: subject.id },
-            update: { text: topic.text, completed: topic.completed },
+            where: { id: topicId },
+            create: { id: topicId, text: t.text, completed: t.completed, subjectId },
+            update: { text: t.text, completed: t.completed },
           })
         }
       }
