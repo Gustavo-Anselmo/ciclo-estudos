@@ -13,11 +13,19 @@ interface Subject {
   weeklyGoalMinutes: number
 }
 
+interface CalendarEvent {
+  title: string
+  start: string
+  end: string
+  isAllDay?: boolean
+}
+
 interface RecommendationBody {
   currentHour: number
   sessionsToday: SessionToday[]
   subjects: Subject[]
   context?: string
+  calendarEvents?: CalendarEvent[]
 }
 
 export const USER_CONTEXT =
@@ -26,7 +34,7 @@ export const USER_CONTEXT =
   'revisão à tarde, e inglês ou descanso à noite. Precisa de pausas entre blocos longos.'
 
 function buildPrompt(body: RecommendationBody): string {
-  const { currentHour, sessionsToday, subjects, context } = body
+  const { currentHour, sessionsToday, subjects, context, calendarEvents } = body
 
   const sessionsSummary =
     sessionsToday.length === 0
@@ -45,6 +53,20 @@ function buildPrompt(body: RecommendationBody): string {
 
   const totalTodayMin = Math.round(sessionsToday.reduce((acc, s) => acc + s.duration, 0) / 60)
 
+  const calendarSection =
+    calendarEvents && calendarEvents.length > 0
+      ? calendarEvents
+          .map((e) => {
+            const start = new Date(e.start)
+            const end = new Date(e.end)
+            const timeStr = e.isAllDay
+              ? 'dia inteiro'
+              : `${start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} → ${end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+            return `- ${e.title} (${timeStr})`
+          })
+          .join('\n')
+      : 'Nenhum evento encontrado ou Calendar não conectado.'
+
   return `Você é um conselheiro de estudos especializado. Com base nos dados abaixo, forneça uma recomendação personalizada de estudo.
 
 Contexto do usuário:
@@ -59,6 +81,11 @@ ${sessionsSummary}
 
 Matérias disponíveis (com metas semanais):
 ${subjectsList}
+
+=== AGENDA DO CALENDÁRIO (hoje e próximos 2 dias) ===
+${calendarSection}
+
+Use os eventos do calendário para contextualizar a recomendação. Se houver uma aula ou prova próxima, priorize o estudo relacionado. Mencione eventos específicos na recomendação quando relevante (ex: 'você tem Arquitetura amanhã — revise hoje').
 
 Responda APENAS com um JSON válido, sem markdown, no seguinte formato:
 {
@@ -102,6 +129,19 @@ export async function recommendationRoutes(app: FastifyInstance) {
               },
             },
             context: { type: 'string' },
+            calendarEvents: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['title', 'start', 'end'],
+                properties: {
+                  title: { type: 'string' },
+                  start: { type: 'string' },
+                  end: { type: 'string' },
+                  isAllDay: { type: 'boolean' },
+                },
+              },
+            },
           },
         },
       },

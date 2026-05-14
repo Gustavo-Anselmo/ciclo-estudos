@@ -1026,6 +1026,17 @@ function exportCSV() {
 }
 
 // ── AI RECOMMENDATION ──
+async function fetchCalendarEvents() {
+  try {
+    const res = await fetch(`${API_URL}/api/calendar/events?userId=${USER_ID}`)
+    if (!res.ok) return []
+    const data = await res.json()
+    return Array.isArray(data) ? data : []
+  } catch {
+    return []
+  }
+}
+
 async function getAIRecommendation() {
   const todayStr = new Date().toDateString();
   const sessionsToday = state.sessions
@@ -1044,6 +1055,8 @@ async function getAIRecommendation() {
     weeklyGoalMinutes: sGoal(s),
   }));
 
+  const calendarEvents = await fetchCalendarEvents()
+
   try {
     const onSlow = () => {
       const el = document.getElementById('ai-result')
@@ -1056,6 +1069,7 @@ async function getAIRecommendation() {
         currentHour: new Date().getHours(),
         sessionsToday,
         subjects,
+        calendarEvents,
       }),
     }, 35000, onSlow)
     if (!res.ok) return null
