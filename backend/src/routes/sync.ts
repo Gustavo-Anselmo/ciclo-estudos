@@ -69,8 +69,8 @@ async function loadUserState(userId: string) {
       duration: s.duration,
       pauseDuration: s.pauseDuration,
     })),
-    constantSubjects: user.constantSubjects,
-    currentIndex: user.currentIndex,
+    constantSubjects: user.constantSubjects ?? [],
+    currentIndex: user.currentIndex ?? 0,
   }
 }
 
@@ -94,16 +94,21 @@ export async function syncRoutes(app: FastifyInstance) {
   app.put<{ Body: { userId: string; state: StateInput } }>('/api/sync/state', async (request, reply) => {
     const { userId, state } = request.body
 
+    const subjects = Array.isArray(state?.subjects) ? state.subjects : []
+    const sessions = Array.isArray(state?.sessions) ? state.sessions : []
+    const constantSubjects = Array.isArray(state?.constantSubjects) ? state.constantSubjects : []
+    const currentIndex = typeof state?.currentIndex === 'number' ? state.currentIndex : 0
+
     const user = await prisma.user.findUnique({ where: { id: userId } })
     if (!user) return reply.code(404).send({ error: 'USER_NOT_FOUND' })
 
     await prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: userId },
-        data: { currentIndex: state.currentIndex, constantSubjects: state.constantSubjects },
+        data: { currentIndex, constantSubjects },
       })
 
-      const validSubjectIds = (state.subjects as any[])
+      const validSubjectIds = (subjects as any[])
         .map((s) => s.id)
         .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
@@ -111,7 +116,7 @@ export async function syncRoutes(app: FastifyInstance) {
         where: { userId, ...(validSubjectIds.length > 0 ? { id: { notIn: validSubjectIds } } : {}) },
       })
 
-      for (const s of state.subjects as any[]) {
+      for (const s of subjects as any[]) {
         const subjectId = s.id && typeof s.id === 'string' ? s.id : crypto.randomUUID()
 
         await tx.subject.upsert({
@@ -120,7 +125,9 @@ export async function syncRoutes(app: FastifyInstance) {
           update: { name: s.name, dailyGoal: s.dailyGoal, order: s.order },
         })
 
-        const validTopicIds = (s.topics as any[])
+        const topics = Array.isArray(s.topics) ? s.topics : []
+
+        const validTopicIds = (topics as any[])
           .map((t: any) => t.id)
           .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
@@ -131,7 +138,7 @@ export async function syncRoutes(app: FastifyInstance) {
           },
         })
 
-        for (const t of s.topics as any[]) {
+        for (const t of topics as any[]) {
           const topicId = t.id && typeof t.id === 'string' ? t.id : crypto.randomUUID()
 
           await tx.topic.upsert({
@@ -142,13 +149,13 @@ export async function syncRoutes(app: FastifyInstance) {
         }
       }
 
-      if (state.sessions.length > 0) {
+      if (sessions.length > 0) {
         const existing = await tx.session.findMany({
-          where: { id: { in: state.sessions.map((s) => s.id) } },
+          where: { id: { in: sessions.map((s) => s.id) } },
           select: { id: true },
         })
         const existingIds = new Set(existing.map((s) => s.id))
-        const newSessions = state.sessions.filter((s) => !existingIds.has(s.id))
+        const newSessions = sessions.filter((s) => !existingIds.has(s.id))
 
         if (newSessions.length > 0) {
           await tx.session.createMany({
