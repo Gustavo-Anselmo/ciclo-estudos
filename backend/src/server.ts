@@ -9,6 +9,7 @@ import { calendarRoutes } from './routes/calendar.js'
 import { examRoutes } from './routes/exam.js'
 import { notificationRoutes } from './routes/notifications.js'
 import { progressRoutes } from './routes/progress.js'
+import { syncRoutes } from './routes/sync.js'
 import { scheduleNotifications } from './jobs/notifications.js'
 
 process.on('uncaughtException', (error) => {
@@ -58,6 +59,7 @@ await app.register(calendarRoutes)
 await app.register(examRoutes)
 await app.register(notificationRoutes)
 await app.register(progressRoutes)
+await app.register(syncRoutes)
 
 const port = env.PORT
 
