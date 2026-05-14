@@ -565,33 +565,49 @@ header {
   #view-subjects, #view-history { max-width: 900px; margin: 0 auto; }
 }
 
+#today-card { min-height: 80px; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   .left-sidebar { display: none; }
   header { margin-left: 0; }
   .body-layout { margin-left: 0; }
-  #dash-stats { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Stats cards: grid 2x2 */
+  #dash-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+
+  /* Subjects: hide ↑↓ buttons, more padding */
+  .move-btns .icon-btn:not(.edit):not(.del) { display: none; }
+  .subject-item { padding: 14px 12px; }
   .subject-item .icon-btn.edit,
   .subject-item .icon-btn.del { opacity: 1; }
+
+  /* Mobile navbar */
   .mobile-nav {
     display: flex !important;
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    background: var(--surface2);
-    border-top: 1px solid var(--border);
-    padding: 8px 0 0;
-    padding-bottom: env(safe-area-inset-bottom, 8px);
+    height: 56px;
+    background: var(--surface1);
+    border-top: 1px solid var(--surface3);
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     justify-content: space-around;
+    align-items: center;
     z-index: 100;
   }
   .mobile-nav .nav-icon {
-    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
     font-size: 22px;
     padding: 8px;
     width: auto;
-    height: auto;
   }
-  .content { padding: 16px 16px calc(72px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Content: never hidden behind navbar */
+  .content { padding: 16px 16px calc(64px + env(safe-area-inset-bottom, 8px)); }
   header { padding: 12px 16px; }
   .dashboard-layout { grid-template-columns: 1fr; }
   .dash-right { display: grid; grid-template-columns: 1fr 1fr; }
