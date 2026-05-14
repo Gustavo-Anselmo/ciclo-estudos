@@ -64,10 +64,34 @@ let pomoBreakInterval = null;
 function save() {
   localStorage.setItem('study-cycle', JSON.stringify(state));
   if (USER_ID) {
+    const normalizedSubjects = state.subjects.map(s => ({
+      id: s.id || crypto.randomUUID(),
+      name: typeof s === 'string' ? s : (s.name || ''),
+      dailyGoal: s.dailyGoal || 0,
+      order: s.order || 0,
+      topics: Array.isArray(s.topics) ? s.topics : []
+    }))
+
+    const normalizedSessions = (state.sessions || []).map(s => ({
+      id: s.id || crypto.randomUUID(),
+      subject: s.subject || '',
+      start: s.start || s.end,
+      end: s.end,
+      duration: s.duration || 0,
+      pauseDuration: s.pauseDuration || 0
+    }))
+
+    const normalizedState = {
+      subjects: normalizedSubjects,
+      sessions: normalizedSessions,
+      constantSubjects: state.constantSubjects || [],
+      currentIndex: state.currentIndex || 0
+    }
+
     fetch(`${API_URL}/api/sync/state`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: USER_ID, state })
+      body: JSON.stringify({ userId: USER_ID, state: normalizedState })
     }).catch(() => {})
   }
 }
@@ -75,8 +99,12 @@ function load() {
   const raw = localStorage.getItem('study-cycle');
   if (raw) { try { state = JSON.parse(raw); } catch(e) {} }
   if (!state.constantSubjects) state.constantSubjects = [];
-  // Normalize subjects: strings → {name, dailyGoal}
-  state.subjects = state.subjects.map(s => typeof s === 'string' ? { name: s, dailyGoal: 0 } : s);
+  // Normalize subjects: strings → {name, dailyGoal} and ensure id/order/topics
+  state.subjects = state.subjects.map(s =>
+    typeof s === 'string'
+      ? { id: crypto.randomUUID(), name: s, dailyGoal: 0, order: 0, topics: [] }
+      : { id: s.id || crypto.randomUUID(), name: s.name, dailyGoal: s.dailyGoal || 0, order: s.order || 0, topics: Array.isArray(s.topics) ? s.topics : [] }
+  );
   initSync().then(() => renderDashboard())
 }
 
