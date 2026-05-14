@@ -21,11 +21,19 @@ process.on('unhandledRejection', (reason) => {
 const app = Fastify({ logger: true })
 
 await app.register(cors, {
-  origin: [
-    'https://gustavo-anselmo.github.io',
-    'http://localhost:5500',
-    'http://localhost:3000',
-  ],
+  origin: (origin, cb) => {
+    const allowed = [
+      'https://gustavo-anselmo.github.io',
+      'http://localhost:5500',
+      'http://127.0.0.1:5500',
+      'http://localhost:3000',
+    ]
+    if (!origin || allowed.includes(origin)) {
+      cb(null, true)
+    } else {
+      cb(new Error('CORS: origin rejected'), false)
+    }
+  },
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,

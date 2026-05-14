@@ -1041,18 +1041,28 @@ function connectCalendar() {
 }
 
 async function checkCalendarAuth() {
+  const banner = document.getElementById('auth-banner')
   try {
     const res = await fetchWithTimeout(`${API_URL}/api/calendar/status`)
-    if (!res.ok) return
-    const data = await res.json()
-    const banner = document.getElementById('auth-banner')
-    if (banner) banner.style.display = data.authenticated ? 'none' : ''
-  } catch {
-    const banner = document.getElementById('auth-banner')
-    if (banner) {
+    let authenticated = false
+    try {
+      const data = await res.json()
+      authenticated = data.authenticated === true
+    } catch { /* non-JSON body — treat as unauthenticated */ }
+
+    if (!banner) return
+    if (authenticated) {
+      banner.remove()
+    } else {
+      const textEl = banner.querySelector('.auth-banner-text')
+      if (textEl) textEl.textContent = 'Conecte o Google Calendar para habilitar o planejamento de provas'
       banner.style.display = ''
+    }
+  } catch {
+    if (banner) {
       const textEl = banner.querySelector('.auth-banner-text')
       if (textEl) textEl.textContent = 'Servidor iniciando, tente novamente em alguns segundos'
+      banner.style.display = ''
     }
   }
 }
