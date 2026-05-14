@@ -1323,15 +1323,34 @@ async function renderProgress() {
     if (!res.ok) throw new Error(String(res.status))
     const data = await res.json()
 
+    const statusColor = {
+      completed: 'var(--green)',
+      on_track:  'var(--accent)',
+      behind:    'var(--orange)',
+      neglected: 'var(--red)',
+    }
+
+    const overallBadge = {
+      on_track: { bg: 'var(--green-dim)',  color: 'var(--green)',  text: 'EM DIA' },
+      behind:   { bg: 'var(--orange-dim)', color: 'var(--orange)', text: 'ATRASADO' },
+      ahead:    { bg: 'var(--blue-dim)',   color: 'var(--accent)', text: 'ADIANTADO' },
+    }[data.overallStatus] || { bg: 'var(--surface3)', color: 'var(--text-muted)', text: (data.overallStatus || '').replace('_', ' ') }
+
     const subjectsHTML = (data.subjects || []).map(s => {
       const pct = s.goalMinutes > 0 ? Math.min(100, Math.round(s.studiedMinutes / s.goalMinutes * 100)) : 0
+      const barColor    = statusColor[s.status] || 'var(--text-dim)'
+      const borderColor = statusColor[s.status] || 'var(--border)'
+      const timeColor   = s.status === 'neglected' ? 'var(--red)' : s.status === 'completed' ? 'var(--green)' : 'var(--text-muted)'
+      const timeLabel   = s.goalMinutes > 0
+        ? `${minsToStr(s.studiedMinutes)} estudadas de ${minsToStr(s.goalMinutes)}`
+        : `${minsToStr(s.studiedMinutes)} estudadas esta semana`
       return `
-        <div class="progress-subject-card">
+        <div class="progress-subject-card" style="border-left:3px solid ${borderColor};padding-left:12px">
           <div class="progress-subject-name">${s.name}</div>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar bar-${s.status}" style="width:${pct}%"></div>
+          <div style="height:4px;background:var(--surface3);border-radius:2px;margin:8px 0;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:2px;transition:width 0.6s ease"></div>
           </div>
-          <div class="progress-time-label">${minsToStr(s.studiedMinutes)} estudadas${s.goalMinutes > 0 ? ` de ${minsToStr(s.goalMinutes)}` : ' esta semana'}</div>
+          <div class="progress-time-label" style="color:${timeColor}">${timeLabel}</div>
           <div class="progress-recommendation">${s.recommendation}</div>
         </div>`
     }).join('')
@@ -1339,7 +1358,7 @@ async function renderProgress() {
     container.innerHTML = `
       <div class="progress-overall-card">
         <div class="progress-overall-top">
-          <span class="progress-status-badge status-${data.overallStatus}">${(data.overallStatus || '').replace('_', ' ')}</span>
+          <span style="background:${overallBadge.bg};color:${overallBadge.color};border-radius:4px;padding:3px 8px;font-size:10px;font-weight:600;font-family:var(--mono)">${overallBadge.text}</span>
         </div>
         <div class="progress-overall-msg">${data.overallMessage}</div>
         <div class="progress-priority">▶&nbsp;${data.priorityAction}</div>
