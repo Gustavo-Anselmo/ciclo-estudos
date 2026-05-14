@@ -1,20 +1,38 @@
 :root {
+  /* Legado — mantidos para compatibilidade */
   --bg:          #0d0d0d;
   --surface:     #141414;
-  --surface2:    #1c1c1c;
-  --surface3:    #242424;
   --border:      #2a2a2a;
   --border-light:#3a3a3a;
-  --text:        #e8e8e8;
-  --text-muted:  #a0a0a0;
-  --text-dim:    #444;
-  --accent:      #4d9fff;
   --accent-dim:  rgba(77,159,255,0.14);
   --accent-dim2: rgba(77,159,255,0.07);
   --danger:      #ff5f5f;
   --danger-dim:  rgba(255,95,95,0.1);
-  --orange:      #f4a261;
-  --green:       #34d399;
+
+  /* Superfícies */
+  --surface0:    #000000;
+  --surface1:    #0d0d0d;
+  --surface2:    #141414;
+  --surface3:    #1c1c1c;
+  --surface4:    #242424;
+
+  /* Tipografia */
+  --text:        #f0f0f0;
+  --text-muted:  #888888;
+  --text-dim:    #555555;
+
+  /* Accent */
+  --accent:      #4d9fff;
+  --blue-dim:    rgba(77, 159, 255, 0.12);
+
+  /* Status semânticos */
+  --green:       #3ddc84;
+  --green-dim:   rgba(61, 220, 132, 0.12);
+  --orange:      #f0a500;
+  --orange-dim:  rgba(240, 165, 0, 0.12);
+  --red:         #ff5c5c;
+  --red-dim:     rgba(255, 92, 92, 0.12);
+
   --mono: 'DM Mono', monospace;
   --sans: 'DM Sans', sans-serif;
   --sidebar-w: 54px;
@@ -24,7 +42,7 @@
 html, body { height: 100%; }
 
 body {
-  background: var(--bg);
+  background: var(--surface0);
   color: var(--text);
   font-family: var(--sans);
   font-weight: 500;
@@ -38,7 +56,7 @@ body {
 /* ── SIDEBAR ── */
 .left-sidebar {
   width: var(--sidebar-w);
-  background: var(--surface);
+  background: var(--surface2);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -131,7 +149,7 @@ header {
 
 .dashboard-layout { display: grid; grid-template-columns: 1fr 260px; gap: 14px; }
 
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; }
+.card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 24px; }
 
 .timer-card {
   display: flex; flex-direction: column; gap: 16px;
@@ -171,7 +189,7 @@ header {
 
 .pomo-field { display: flex; flex-direction: column; gap: 3px; }
 .pomo-field label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
-.pomo-field input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 5px; font-family: var(--mono); font-size: 12px; width: 60px; outline: none; }
+.pomo-field input { background: var(--surface2); border: 1px solid var(--surface4); color: var(--text); padding: 5px 8px; border-radius: 5px; font-family: var(--mono); font-size: 12px; width: 60px; outline: none; }
 .pomo-field input:focus { border-color: var(--accent); }
 
 .pomo-phase-badge { font-family: var(--mono); font-size: 9px; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -217,7 +235,7 @@ header {
 .card-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
 
 .next-list { display: flex; flex-direction: column; gap: 6px; }
-.next-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: var(--surface2); border: 1px solid transparent; }
+.next-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: var(--surface3); border: 1px solid transparent; }
 .next-item:first-child { border-color: rgba(77,159,255,0.25); background: var(--accent-dim2); }
 .next-item .idx  { font-family: var(--mono); font-size: 10px; color: var(--text-dim); width: 14px; text-align: right; flex-shrink: 0; }
 .next-item .name { font-size: 12px; color: var(--text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -233,8 +251,8 @@ header {
 /* Constant subjects */
 .const-dash-card { }
 .const-list { display: flex; flex-direction: column; gap: 6px; }
-.const-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 7px; background: var(--surface2); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
-.const-item:hover { border-color: var(--border-light); background: var(--surface3); }
+.const-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 7px; background: var(--surface3); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
+.const-item:hover { border-color: var(--border-light); background: var(--surface4); }
 .const-item.const-active { border-color: var(--accent); background: var(--accent-dim2); }
 .const-badge { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
 .const-name  { flex: 1; font-size: 13px; color: var(--text); }
@@ -248,7 +266,7 @@ header {
 
 .add-form { display: flex; gap: 8px; margin-bottom: 14px; }
 
-.input { flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 7px; font-family: var(--sans); font-size: 14px; outline: none; transition: border-color 0.15s; }
+.input { flex: 1; background: var(--surface2); border: 1px solid var(--surface4); color: var(--text); padding: 10px 14px; border-radius: 7px; font-family: var(--sans); font-size: 14px; outline: none; transition: border-color 0.15s; }
 .input:focus { border-color: var(--accent); }
 .input::placeholder { color: var(--text-dim); }
 
@@ -257,9 +275,9 @@ header {
 
 .subjects-list { display: flex; flex-direction: column; gap: 5px; }
 
-.subject-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; transition: border-color 0.15s, background 0.15s; }
+.subject-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface3); border: 1px solid var(--border); border-radius: 7px; transition: border-color 0.15s, background 0.15s; }
 .subject-item.current-subject { border-color: var(--accent); background: var(--accent-dim2); }
-.subject-item:hover { border-color: var(--border-light); background: var(--surface3); }
+.subject-item:hover { border-color: var(--border-light); background: var(--surface4); }
 .subject-item.drag-over { border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent); background: var(--accent-dim2) !important; }
 .subject-item.dragging  { opacity: 0.4; }
 
@@ -271,7 +289,7 @@ header {
 .subject-item-name { flex: 1; font-size: 14px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .current-badge     { font-family: var(--mono); font-size: 9px; color: var(--accent); background: var(--accent-dim); padding: 2px 7px; border-radius: 4px; letter-spacing: 0.07em; text-transform: uppercase; flex-shrink: 0; }
 
-.goal-input { width: 68px; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); padding: 4px 6px; border-radius: 5px; font-family: var(--mono); font-size: 10px; outline: none; text-align: center; flex-shrink: 0; }
+.goal-input { width: 68px; background: var(--surface2); border: 1px solid var(--surface4); color: var(--text-muted); padding: 4px 6px; border-radius: 5px; font-family: var(--mono); font-size: 10px; outline: none; text-align: center; flex-shrink: 0; }
 .goal-input:focus { border-color: var(--accent); color: var(--text); }
 .goal-input::placeholder { color: var(--text-dim); font-size: 9px; }
 
@@ -283,7 +301,7 @@ header {
 .icon-btn.del:hover  { color: var(--danger); background: var(--danger-dim); }
 .icon-btn.edit:hover { color: var(--accent); background: var(--accent-dim); }
 
-.const-manage-item  { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; margin-bottom: 5px; }
+.const-manage-item  { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface3); border: 1px solid var(--border); border-radius: 7px; margin-bottom: 5px; }
 .const-manage-name  { flex: 1; font-size: 14px; color: var(--text); }
 .const-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
 
@@ -316,7 +334,7 @@ header {
 .period-btn { background: none; border: none; padding: 3px 10px; border-radius: 4px; font-family: var(--mono); font-size: 10px; color: var(--text-dim); cursor: pointer; transition: all 0.15s; }
 .period-btn:hover { color: var(--text-muted); }
 .period-btn.active { background: var(--surface2); color: var(--text); }
-.hist-select { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); padding: 5px 9px; border-radius: 6px; font-family: var(--mono); font-size: 10px; cursor: pointer; outline: none; }
+.hist-select { background: var(--surface2); border: 1px solid var(--surface4); color: var(--text-muted); padding: 5px 9px; border-radius: 6px; font-family: var(--mono); font-size: 10px; cursor: pointer; outline: none; }
 .hist-select:hover { border-color: var(--border-light); }
 .hist-select option { background: var(--surface2); }
 
@@ -357,7 +375,7 @@ header {
 .hist-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 .hist-edit-field { display: flex; flex-direction: column; gap: 4px; }
 .hist-edit-label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
-.hist-edit-input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 9px; border-radius: 5px; font-family: var(--mono); font-size: 11px; outline: none; }
+.hist-edit-input { background: var(--surface2); border: 1px solid var(--surface4); color: var(--text); padding: 6px 9px; border-radius: 5px; font-family: var(--mono); font-size: 11px; outline: none; }
 .hist-edit-input:focus { border-color: var(--accent); }
 .hist-edit-actions { display: flex; gap: 6px; }
 .hist-edit-btn { flex: 1; padding: 7px; border-radius: 5px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); transition: all 0.15s; text-transform: uppercase; }
@@ -419,7 +437,7 @@ header {
     display: flex !important;
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    background: var(--surface);
+    background: var(--surface2);
     border-top: 1px solid var(--border);
     padding: 8px 0 0;
     padding-bottom: env(safe-area-inset-bottom, 8px);
