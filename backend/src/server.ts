@@ -11,6 +11,7 @@ import { notificationRoutes } from './routes/notifications.js'
 import { progressRoutes } from './routes/progress.js'
 import { syncRoutes } from './routes/sync.js'
 import { scheduleNotifications } from './jobs/notifications.js'
+import { prisma } from './lib/prisma.js'
 
 process.on('uncaughtException', (error) => {
   console.error('Uncaught exception:', error)
@@ -69,4 +70,7 @@ app.listen({ port, host: '0.0.0.0' }, (err) => {
     process.exit(1)
   }
   scheduleNotifications()
+  prisma.$connect()
+    .then(() => console.log('Database connected'))
+    .catch((err) => console.error('Database connection failed:', err))
 })
