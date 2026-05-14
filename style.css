@@ -463,36 +463,24 @@ header {
 .btn-ai { width: 100%; flex: none; }
 .btn-ai:hover:not(:disabled) { color: var(--accent); }
 
-/* ── AUTH BANNER ── */
-.auth-banner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: 8px;
-  padding: 10px 16px;
-  margin-bottom: 14px;
-  font-size: 12px;
-  color: var(--text-muted);
+/* ── CALENDAR ICON BUTTON ── */
+.cal-icon-btn {
+  position: relative;
+  font-size: 15px;
+  opacity: 0.4;
+  transition: opacity 0.2s, border-color 0.15s, background 0.15s;
 }
-.auth-banner-text { flex: 1; line-height: 1.4; }
-.btn-auth-connect {
-  background: var(--accent-dim);
-  border: 1px solid rgba(77,159,255,0.3);
-  color: var(--accent);
-  border-radius: 6px;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  padding: 5px 14px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s;
-  flex-shrink: 0;
+.cal-icon-btn::before { content: '📅'; }
+.cal-icon-btn.cal-connected { opacity: 1; color: var(--accent); }
+.cal-icon-btn.cal-disconnected::after {
+  content: '';
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  border: 1.5px solid var(--bg);
 }
-.btn-auth-connect:hover { background: rgba(77,159,255,0.2); }
 
 /* ── EXAM CARD ── */
 .exam-card { grid-column: 1; }

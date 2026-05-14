@@ -16,6 +16,7 @@
   </div>
   <div class="header-right">
     <div class="clock-badge" id="clock-badge">--:--</div>
+    <button class="notif-bell-btn cal-icon-btn" id="cal-icon-btn" onclick="onCalIconClick()" title="Google Calendar"></button>
     <div id="notif-bell-wrap" class="notif-bell-wrap">
       <button class="notif-bell-btn" id="notif-bell-btn" onclick="toggleNotifDropdown()">🔔</button>
       <span class="notif-badge" id="notif-badge" style="display:none">0</span>
@@ -44,10 +45,6 @@
 
     <!-- DASHBOARD -->
     <div class="view active" id="view-dashboard">
-      <div id="auth-banner" class="auth-banner" style="display:none">
-        <span class="auth-banner-text">Conecte o Google Calendar para habilitar o planejamento de provas</span>
-        <button class="btn-auth-connect" onclick="connectCalendar()">Conectar</button>
-      </div>
       <div class="dashboard-layout">
 
         <div class="dash-left">
