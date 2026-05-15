@@ -521,10 +521,19 @@ function renderDashboard() {
   let _taskLbl = document.getElementById('active-task-label')
   if (activeTask) {
     if (!_taskLbl) {
-      nameEl.insertAdjacentHTML('afterend', '<div id="active-task-label" style="font-size:12px;color:var(--accent);font-style:italic;margin-top:2px"></div>')
+      nameEl.insertAdjacentHTML('afterend', '<div id="active-task-label" style="font-size:12px;font-style:italic;margin-top:2px"></div>')
       _taskLbl = document.getElementById('active-task-label')
     }
-    if (_taskLbl) _taskLbl.textContent = `Tarefa: ${activeTask.title}`
+    if (_taskLbl) {
+      if (activeTask.daysLeft != null) {
+        const reviewColor = activeTask.daysLeft <= 7 ? 'var(--red)' : 'var(--orange)'
+        _taskLbl.style.color = reviewColor
+        _taskLbl.textContent = `Revisão para prova — ${activeTask.daysLeft} dias`
+      } else {
+        _taskLbl.style.color = 'var(--accent)'
+        _taskLbl.textContent = `Tarefa: ${activeTask.title}`
+      }
+    }
   } else if (_taskLbl) {
     _taskLbl.remove()
   }
@@ -595,7 +604,7 @@ function addConstantSubject() {
   const name  = input.value.trim();
   if (!name) return;
   if (!state.constantSubjects) state.constantSubjects = [];
-  if (state.constantSubjects.includes(name) || state.subjects.some(s => sName(s) === name)) { showToast('Matéria já existe'); return; }
+  if (state.constantSubjects.includes(name)) { showToast('Matéria já existe nas constantes'); return; }
   state.constantSubjects.push(name);
   save(); input.value = '';
   renderConstantManage(); renderConstantDashboard();
@@ -644,6 +653,7 @@ function addFacultySubject() {
   const examDate = document.getElementById('faculty-date')?.value || ''
   if (!name || !examDate) { showToast('Preencha nome e data'); return }
   if (!state.facultySubjects) state.facultySubjects = []
+  if (state.facultySubjects.some(s => s.name === name)) { showToast('Matéria já existe na faculdade'); return }
   state.facultySubjects.push({ name, examDate })
   save()
   document.getElementById('faculty-name').value = ''
@@ -698,7 +708,7 @@ function addSubject() {
   const input = document.getElementById('subject-input');
   const name  = input.value.trim();
   if (!name) return;
-  if (state.subjects.some(s => sName(s) === name)) { showToast('Matéria já existe'); return; }
+  if (state.subjects.some(s => sName(s) === name)) { showToast('Matéria já existe no ciclo'); return; }
   state.subjects.push({ name, dailyGoal: 0 });
   save(); input.value = '';
   renderSubjects(); renderDashboard();
@@ -1639,6 +1649,24 @@ async function cycleTopicState(taskId, topicId) {
   } catch { showToast('Erro ao salvar') }
 }
 
+function startReview(examId) {
+  const exam = planningExams.find(e => e.id === examId)
+  if (!exam) return
+  const daysLeft = Math.ceil((new Date(exam.examDate) - new Date()) / (1000 * 60 * 60 * 24))
+  activeTask = {
+    id: 'review-' + exam.id,
+    title: 'Revisão — ' + exam.subjectName,
+    subjectName: exam.subjectName,
+    totalTime: 0,
+    topics: [],
+    daysLeft,
+  }
+  const idx = state.subjects.findIndex(s => sName(s).toLowerCase().trim() === exam.subjectName.toLowerCase().trim())
+  if (idx !== -1) { studyingConstant = null; state.currentIndex = idx }
+  save()
+  showView('dashboard')
+}
+
 function startTask(taskId, subjectName) {
   const task = planningTasks.find(t => t.id === taskId)
   if (!task) return
@@ -1771,6 +1799,7 @@ function renderExamCard(exam) {
       <span style="font-size:13px;font-weight:600;color:var(--text);flex:1">${exam.subjectName}</span>
       <span style="font-size:12px;color:var(--text-muted)">${dateStr}</span>
       <span style="font-size:12px;font-weight:600;color:${daysColor}">${daysText}</span>
+      <button onclick="startReview('${exam.id}')" style="background:var(--surface4);border:1px solid var(--surface3);color:var(--text-muted);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer">▶ Revisar</button>
       <button onclick="deleteExam('${exam.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:18px;padding:0;line-height:1" title="Deletar">×</button>
     </div>
     ${checkpoints}
