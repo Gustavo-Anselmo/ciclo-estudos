@@ -1308,6 +1308,11 @@ function renderAICard(cardState) {
   } else if (cardState === 'loading') {
     btn.textContent = 'Consultando IA...';
     btn.disabled = true;
+    result.style.display = '';
+    result.innerHTML = `
+      <div class="skeleton-block" style="height:18px;width:60%;margin-bottom:8px;border-radius:4px"></div>
+      <div class="skeleton-block" style="height:12px;width:90%;margin-bottom:6px;border-radius:4px"></div>
+      <div class="skeleton-block" style="height:12px;width:75%;border-radius:4px"></div>`;
   } else if (cardState === 'error') {
     btn.textContent = 'Tentar novamente';
     btn.disabled = false;
@@ -1548,7 +1553,10 @@ function planNextState(s)  { return s === 'pending' ? 'theory' : s === 'theory' 
 async function updatePriorities() {
   const el = document.getElementById('priorities-list')
   if (!el) return
-  el.innerHTML = `<div style="color:var(--text-dim);font-size:12px;padding:8px 0">Carregando...</div>`
+  el.innerHTML = `
+    <div class="skeleton-block" style="height:18px;width:60%;margin-bottom:8px;border-radius:4px"></div>
+    <div class="skeleton-block" style="height:12px;width:90%;margin-bottom:6px;border-radius:4px"></div>
+    <div class="skeleton-block" style="height:12px;width:75%;border-radius:4px"></div>`
   try {
     const subjects = state.subjects.map(s => ({ name: sName(s), weeklyGoalMinutes: sGoal(s) * 7 }))
     const res = await fetch(`${API_URL}/api/priorities`, {
@@ -1903,11 +1911,9 @@ async function renderProgress() {
   if (!container) return
 
   container.innerHTML = `
-    <div class="progress-skeleton">
-      <div class="progress-skeleton-block" style="height:112px"></div>
-      <div class="progress-skeleton-block" style="height:90px"></div>
-      <div class="progress-skeleton-block" style="height:90px"></div>
-    </div>`
+    <div class="skeleton-block" style="height:18px;width:60%;margin-bottom:8px;border-radius:4px"></div>
+    <div class="skeleton-block" style="height:12px;width:90%;margin-bottom:6px;border-radius:4px"></div>
+    <div class="skeleton-block" style="height:12px;width:75%;border-radius:4px"></div>`
 
   if (!state.subjects.length) {
     container.innerHTML = '<p class="progress-error">Adicione matérias ao ciclo para ver o diagnóstico.</p>'
@@ -1924,10 +1930,10 @@ async function renderProgress() {
     const sessionsThisWeek = state.sessions.filter(s => new Date(s.end) >= weekStart)
     const onSlow = () => {
       container.innerHTML = `
-        <div class="progress-skeleton">
-          <div class="progress-skeleton-block" style="height:112px"></div>
-        </div>
-        <p class="progress-error" style="margin-top:12px">Conectando ao servidor, aguarde...</p>`
+        <div class="skeleton-block" style="height:18px;width:60%;margin-bottom:8px;border-radius:4px"></div>
+        <div class="skeleton-block" style="height:12px;width:90%;margin-bottom:6px;border-radius:4px"></div>
+        <div class="skeleton-block" style="height:12px;width:75%;margin-bottom:12px;border-radius:4px"></div>
+        <p class="progress-error">Conectando ao servidor, aguarde...</p>`
     }
     const res = await fetchWithTimeout(`${API_URL}/api/progress/diagnosis`, {
       method: 'POST',
