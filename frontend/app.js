@@ -43,7 +43,7 @@ function sName(s) { return typeof s === 'string' ? s : (s.name || ''); }
 function sGoal(s) { return typeof s === 'string' ? 0 : (s.dailyGoal || 0); }
 
 // ── STATE ──
-let state = { subjects: [], currentIndex: 0, sessions: [], constantSubjects: [] };
+let state = { subjects: [], currentIndex: 0, sessions: [], constantSubjects: [], facultySubjects: [] };
 let timerInterval   = null;
 let timerSeconds    = 0;
 let timerRunning    = false;
@@ -91,6 +91,7 @@ function save() {
       subjects: normalizedSubjects,
       sessions: normalizedSessions,
       constantSubjects: state.constantSubjects || [],
+      facultySubjects: state.facultySubjects || [],
       currentIndex: state.currentIndex || 0
     }
 
@@ -107,6 +108,7 @@ function load() {
   const raw = localStorage.getItem('study-cycle');
   if (raw) { try { state = JSON.parse(raw); } catch(e) {} }
   if (!state.constantSubjects) state.constantSubjects = [];
+  if (!state.facultySubjects) state.facultySubjects = [];
   // Normalize subjects: strings → {name, dailyGoal} and ensure id/order/topics
   state.subjects = state.subjects.map(s =>
     typeof s === 'string'
@@ -134,6 +136,7 @@ async function initSync() {
       state.subjects = remote.subjects
       state.sessions = remote.sessions ?? []
       state.constantSubjects = remote.constantSubjects ?? []
+      state.facultySubjects = remote.facultySubjects ?? []
       state.currentIndex = remote.currentIndex ?? 0
     }
     save()
@@ -627,6 +630,69 @@ function renderConstantManage() {
   }).join('');
 }
 
+// ── FACULTY SUBJECTS ──
+function toggleFacultyForm() {
+  const f = document.getElementById('faculty-form')
+  if (!f) return
+  const open = f.style.display !== 'none'
+  f.style.display = open ? 'none' : 'block'
+  if (!open) document.getElementById('faculty-name')?.focus()
+}
+
+function addFacultySubject() {
+  const name = (document.getElementById('faculty-name')?.value || '').trim()
+  const examDate = document.getElementById('faculty-date')?.value || ''
+  if (!name || !examDate) { showToast('Preencha nome e data'); return }
+  if (!state.facultySubjects) state.facultySubjects = []
+  state.facultySubjects.push({ name, examDate })
+  save()
+  document.getElementById('faculty-name').value = ''
+  document.getElementById('faculty-date').value = ''
+  toggleFacultyForm()
+  renderFacultySubjects()
+}
+
+function removeFacultySubject(idx) {
+  state.facultySubjects.splice(idx, 1)
+  save()
+  renderFacultySubjects()
+}
+
+function renderFacultySubjects() {
+  const list = document.getElementById('faculty-list')
+  if (!list) return
+  if (!state.facultySubjects) state.facultySubjects = []
+  const now = new Date()
+  const sorted = state.facultySubjects
+    .map((s, origIdx) => ({ ...s, origIdx }))
+    .sort((a, b) => new Date(a.examDate) - new Date(b.examDate))
+  if (!sorted.length) {
+    list.innerHTML = '<div class="const-empty">Nenhuma matéria da faculdade cadastrada.</div>'
+    return
+  }
+  list.innerHTML = sorted.map(s => {
+    const c = subjectColor(s.name)
+    const examDateObj = new Date(s.examDate)
+    const daysUntil = Math.ceil((examDateObj - now) / 86400000)
+    const dateStr = examDateObj.toLocaleDateString('pt-BR')
+    let badgeColor, badgeBg
+    if (daysUntil <= 0) { badgeColor = 'var(--red)'; badgeBg = 'var(--red-dim)' }
+    else if (daysUntil <= 7) { badgeColor = 'var(--red)'; badgeBg = 'var(--red-dim)' }
+    else if (daysUntil <= 14) { badgeColor = 'var(--orange)'; badgeBg = 'var(--orange-dim)' }
+    else { badgeColor = 'var(--text-dim)'; badgeBg = 'var(--surface3)' }
+    const daysText = daysUntil > 0 ? `${daysUntil} dias` : daysUntil === 0 ? 'Hoje!' : 'Passou'
+    return `<div class="const-manage-item">
+      <div class="const-icon" style="background:${c}">${subjectInitial(s.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name}</div>
+        <div style="font-size:11px;color:var(--text-dim);font-family:var(--mono)">${dateStr}</div>
+      </div>
+      <span style="font-size:10px;font-weight:700;font-family:var(--mono);padding:2px 7px;border-radius:4px;color:${badgeColor};background:${badgeBg};flex-shrink:0">${daysText}</span>
+      <button class="icon-btn del" onclick="removeFacultySubject(${s.origIdx})" title="Remover">×</button>
+    </div>`
+  }).join('')
+}
+
 // ── SUBJECTS ──
 function addSubject() {
   const input = document.getElementById('subject-input');
@@ -725,6 +791,7 @@ function onDragEnd() {
 
 function renderSubjects() {
   renderConstantManage();
+  renderFacultySubjects();
   const list = document.getElementById('subjects-list');
   if (!state.subjects.length) {
     list.innerHTML = `<div class="empty-state"><p>📚</p><p>Nenhuma matéria ainda</p></div>`; return;
@@ -1589,9 +1656,10 @@ function toggleExamForm() {
 
 async function createExam() {
   const subjectName = (document.getElementById('exam-new-subject')?.value || '').trim()
-  const examDate = document.getElementById('exam-new-date')?.value || ''
+  const examDateInput = document.getElementById('exam-new-date')?.value || ''
   const notes = (document.getElementById('exam-new-notes')?.value || '').trim() || undefined
-  if (!subjectName || !examDate) { showToast('Preencha matéria e data'); return }
+  if (!subjectName || !examDateInput) { showToast('Preencha matéria e data'); return }
+  const examDate = new Date(examDateInput).toISOString()
   try {
     const res = await fetch(`${API_URL}/api/exams`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

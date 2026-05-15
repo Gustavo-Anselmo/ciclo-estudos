@@ -87,11 +87,18 @@ ${calendarSection}
 
 Use os eventos do calendário para contextualizar a recomendação. Se houver uma aula ou prova próxima, priorize o estudo relacionado. Mencione eventos específicos na recomendação quando relevante (ex: 'você tem Arquitetura amanhã — revise hoje').
 
-Responda APENAS com um JSON válido, sem markdown, no seguinte formato:
+Responda APENAS com um JSON válido, sem markdown:
 {
-  "recommendation": "Recomendação breve e acionável do que estudar a seguir (1-2 frases)",
-  "reasoning": "Explicação do motivo desta recomendação dado o contexto e dados (2-3 frases)"
-}`
+  "recommendation": "Uma frase direta e específica. Máximo 20 palavras. Exemplo: 'Estude Redes agora — prova em 12 dias e você não estudou hoje.'",
+  "reasoning": "Uma frase explicando o motivo. Máximo 15 palavras."
+}
+
+Regras para a recommendation:
+- Sempre cite uma matéria específica pelo nome
+- Se houver prova próxima, mencione os dias restantes
+- Se já estudou hoje, reconheça e sugira o próximo passo
+- Nunca use palavras genéricas como "continue", "foque", "dedique-se"
+- Seja cirúrgico: matéria + ação + motivo em uma frase`
 }
 
 export async function recommendationRoutes(app: FastifyInstance) {

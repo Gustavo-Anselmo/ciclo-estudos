@@ -190,6 +190,26 @@
       <hr class="section-divider">
 
       <div class="section-header">
+        <div class="section-title">Faculdade</div>
+      </div>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Matérias com data de prova — ordenadas por urgência</p>
+      <div id="faculty-form" style="display:none;background:var(--surface3);border:1px solid var(--surface4);border-radius:8px;padding:12px;margin-bottom:12px">
+        <input class="input" id="faculty-name" placeholder="Nome da matéria..." maxlength="40"
+          style="margin-bottom:8px" onkeydown="if(event.key==='Enter') addFacultySubject()">
+        <input class="input" id="faculty-date" type="date" style="margin-bottom:8px">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1" onclick="addFacultySubject()">Adicionar</button>
+          <button class="btn" style="flex:1" onclick="toggleFacultyForm()">Cancelar</button>
+        </div>
+      </div>
+      <div class="add-form" style="margin-bottom:12px">
+        <button class="btn-add" onclick="toggleFacultyForm()">+ Adicionar</button>
+      </div>
+      <div id="faculty-list"></div>
+
+      <hr class="section-divider">
+
+      <div class="section-header">
         <div class="section-title">Dispositivos</div>
       </div>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Use o mesmo ID para sincronizar seus dados entre dispositivos.</p>
