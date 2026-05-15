@@ -8,6 +8,8 @@ import { authRoutes } from './routes/auth.js'
 import { calendarRoutes } from './routes/calendar.js'
 import { examRoutes } from './routes/exam.js'
 import { taskRoutes } from './routes/tasks.js'
+import { examCrudRoutes } from './routes/exams.js'
+import { priorityRoutes } from './routes/priorities.js'
 import { notificationRoutes } from './routes/notifications.js'
 import { progressRoutes } from './routes/progress.js'
 import { syncRoutes } from './routes/sync.js'
@@ -60,6 +62,8 @@ await app.register(authRoutes)
 await app.register(calendarRoutes)
 await app.register(examRoutes)
 await app.register(taskRoutes)
+await app.register(examCrudRoutes)
+await app.register(priorityRoutes)
 await app.register(notificationRoutes)
 await app.register(progressRoutes)
 await app.register(syncRoutes)
