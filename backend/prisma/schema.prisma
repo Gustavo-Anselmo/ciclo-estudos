@@ -15,6 +15,8 @@ model User {
   sessions         Session[]
   constantSubjects String[]
   currentIndex     Int       @default(0)
+  tasks            Task[]
+  exams            Exam[]
 }
 
 model Subject {
@@ -46,4 +48,50 @@ model Session {
   pauseDuration Int      @default(0)
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id          String      @id @default(uuid())
+  title       String
+  subjectName String
+  status      String      @default("pending")
+  totalTime   Int         @default(0)
+  order       Int         @default(0)
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topics      TaskTopic[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model TaskTopic {
+  id        String   @id @default(uuid())
+  text      String
+  state     String   @default("pending")
+  order     Int      @default(0)
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Exam {
+  id          String           @id @default(uuid())
+  subjectName String
+  examDate    DateTime
+  notes       String?
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkpoints ExamCheckpoint[]
+  createdAt   DateTime         @default(now())
+}
+
+model ExamCheckpoint {
+  id             String   @id @default(uuid())
+  daysBeforeExam Int
+  scheduledDate  DateTime
+  hitRate        Float?
+  completed      Boolean  @default(false)
+  examId         String
+  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
 }
