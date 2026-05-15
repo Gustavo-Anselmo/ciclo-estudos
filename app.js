@@ -1468,7 +1468,7 @@ function planNextState(s)  { return s === 'pending' ? 'theory' : s === 'theory' 
 
 // ── PLANNING ACTIONS ──────────────────────────────────────────────────────────
 
-async function fetchPriorities() {
+async function updatePriorities() {
   const el = document.getElementById('priorities-list')
   if (!el) return
   el.innerHTML = `<div style="color:var(--text-dim);font-size:12px;padding:8px 0">Carregando...</div>`
@@ -1481,33 +1481,25 @@ async function fetchPriorities() {
     if (!res.ok) throw new Error()
     const data = await res.json()
     planningPriorities = data.priorities ?? []
-    renderPrioritiesList()
+    el.innerHTML = planningPriorities.length
+      ? planningPriorities.map(p => {
+          const [lbl, col] = planUrgencyInfo(p.urgencyLevel)
+          return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--surface3)">
+            <span style="background:${col};color:#000;font-size:9px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:4px;flex-shrink:0;margin-top:2px;white-space:nowrap">${lbl}</span>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${p.subjectName}</div>
+              <div style="font-size:12px;color:var(--text-muted);font-style:italic">${p.reason}</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${p.pendingTopics} tópico${p.pendingTopics !== 1 ? 's' : ''} pendente${p.pendingTopics !== 1 ? 's' : ''}</div>
+            </div>
+          </div>`
+        }).join('')
+      : `<div style="color:var(--text-dim);text-align:center;font-size:12px;padding:16px 0">Nenhuma prioridade encontrada.</div>`
   } catch {
     el.innerHTML = `<div style="color:var(--danger);font-size:12px">Erro ao carregar. Tente novamente.</div>`
   }
 }
 
-function renderPrioritiesList() {
-  const el = document.getElementById('priorities-list')
-  if (!el) return
-  if (!planningPriorities.length) {
-    el.innerHTML = `<div style="color:var(--text-dim);text-align:center;font-size:12px;padding:16px 0">Clique em "Atualizar prioridades" para ver suas prioridades</div>`
-    return
-  }
-  el.innerHTML = planningPriorities.map(p => {
-    const [lbl, col] = planUrgencyInfo(p.urgencyLevel)
-    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--surface3)">
-      <span style="background:${col};color:#000;font-size:9px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:4px;flex-shrink:0;margin-top:2px;white-space:nowrap">${lbl}</span>
-      <div>
-        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${p.subjectName}</div>
-        <div style="font-size:12px;color:var(--text-muted);font-style:italic">${p.reason}</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${p.pendingTopics} tópico${p.pendingTopics !== 1 ? 's' : ''} pendente${p.pendingTopics !== 1 ? 's' : ''}</div>
-      </div>
-    </div>`
-  }).join('')
-}
-
-function toggleNewTaskForm() {
+function toggleTaskForm() {
   const f = document.getElementById('new-task-form')
   if (!f) return
   const open = f.style.display !== 'none'
@@ -1534,12 +1526,12 @@ async function createTask() {
     const task = await res.json()
     planningTasks.push(task)
     const list = document.getElementById('tasks-list')
-    if (list) list.innerHTML = planningTasks.map(renderPlanTaskCard).join('')
-    toggleNewTaskForm()
+    if (list) list.innerHTML = planningTasks.map(renderTaskCard).join('')
+    toggleTaskForm()
   } catch { showToast('Erro ao criar tarefa') }
 }
 
-async function deletePlanTask(id) {
+async function deleteTask(id) {
   try {
     await fetch(`${API_URL}/api/tasks/${id}`, { method: 'DELETE' })
     planningTasks = planningTasks.filter(t => t.id !== id)
@@ -1550,28 +1542,27 @@ async function deletePlanTask(id) {
   } catch { showToast('Erro ao deletar tarefa') }
 }
 
-async function cycleTopicState(taskId, topicId, currentState) {
-  const next = planNextState(currentState)
+async function cycleTopicState(taskId, topicId) {
+  const task = planningTasks.find(t => t.id === taskId)
+  if (!task) return
+  const topic = task.topics.find(tp => tp.id === topicId)
+  if (!topic) return
+  const next = planNextState(topic.state)
+  topic.state = next
   const btn = document.getElementById(`topic-btn-${topicId}`)
   if (btn) {
     btn.textContent = planTopicIcon(next)
     btn.style.color = planTopicColor(next)
-    btn.setAttribute('onclick', `cycleTopicState('${taskId}','${topicId}','${next}')`)
   }
-  const task = planningTasks.find(t => t.id === taskId)
-  if (task) {
-    const topic = task.topics.find(tp => tp.id === topicId)
-    if (topic) topic.state = next
-    const allDone = task.topics.length > 0 && task.topics.every(tp => tp.state === 'exercises')
-    const card = document.getElementById(`task-card-${taskId}`)
-    if (card) card.style.borderColor = allDone ? 'var(--green)' : 'var(--surface4)'
-    const badge = document.getElementById(`task-done-badge-${taskId}`)
-    if (badge) badge.style.display = allDone ? '' : 'none'
-    if (allDone && next === 'exercises') {
-      const subjs = state.subjects
-      const nextName = subjs.length > 0 ? sName(subjs[(state.currentIndex + 1) % subjs.length]) : ''
-      showCompletionToast(nextName ? `✓ Tarefa concluída! Próxima matéria: ${nextName}` : '✓ Tarefa concluída!')
-    }
+  const allDone = task.topics.length > 0 && task.topics.every(tp => tp.state === 'exercises')
+  const card = document.getElementById(`task-card-${taskId}`)
+  if (card) card.style.borderColor = allDone ? 'var(--green)' : 'var(--surface4)'
+  const badge = document.getElementById(`task-done-badge-${taskId}`)
+  if (badge) badge.style.display = allDone ? '' : 'none'
+  if (allDone) {
+    const subjs = state.subjects
+    const nextName = subjs.length > 0 ? sName(subjs[(state.currentIndex + 1) % subjs.length]) : ''
+    showCompletionToast(nextName ? `✓ Tarefa concluída! Próxima matéria: ${nextName}` : '✓ Tarefa concluída!')
   }
   try {
     await fetch(`${API_URL}/api/tasks/${taskId}/topics/${topicId}`, {
@@ -1581,17 +1572,17 @@ async function cycleTopicState(taskId, topicId, currentState) {
   } catch { showToast('Erro ao salvar') }
 }
 
-function startTaskStudy(taskId) {
+function startTask(taskId, subjectName) {
   const task = planningTasks.find(t => t.id === taskId)
   if (!task) return
   activeTask = task
-  const idx = state.subjects.findIndex(s => sName(s) === task.subjectName)
+  const idx = state.subjects.findIndex(s => sName(s) === subjectName)
   if (idx >= 0) { studyingConstant = null; state.currentIndex = idx }
-  else studyingConstant = task.subjectName
+  else studyingConstant = subjectName
   showView('dashboard')
 }
 
-function toggleNewExamForm() {
+function toggleExamForm() {
   const f = document.getElementById('new-exam-form')
   if (f) f.style.display = f.style.display !== 'none' ? 'none' : 'block'
 }
@@ -1611,23 +1602,23 @@ async function createExam() {
     planningExams.push(exam)
     planningExams.sort((a, b) => new Date(a.examDate) - new Date(b.examDate))
     const list = document.getElementById('exams-list')
-    if (list) list.innerHTML = planningExams.map(renderPlanExamCard).join('')
-    toggleNewExamForm()
+    if (list) list.innerHTML = planningExams.map(renderExamCard).join('')
+    toggleExamForm()
   } catch { showToast('Erro ao criar prova') }
 }
 
-async function deletePlanExam(id) {
+async function deleteExam(id) {
   try {
     await fetch(`${API_URL}/api/exams/${id}`, { method: 'DELETE' })
     planningExams = planningExams.filter(e => e.id !== id)
-    document.getElementById(`exam-card-plan-${id}`)?.remove()
+    document.getElementById(`exam-card-${id}`)?.remove()
     const list = document.getElementById('exams-list')
-    if (list && !list.querySelector('[id^="exam-card-plan-"]'))
+    if (list && !list.querySelector('[id^="exam-card-"]'))
       list.innerHTML = `<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma prova cadastrada</div>`
   } catch { showToast('Erro ao deletar prova') }
 }
 
-async function registerCheckpoint(checkpointId, examId) {
+async function registerHitRate(examId, checkpointId) {
   const input = document.getElementById(`cp-input-${checkpointId}`)
   if (!input) return
   const hitRate = parseFloat(input.value)
@@ -1644,20 +1635,20 @@ async function registerCheckpoint(checkpointId, examId) {
       const cp = exam.checkpoints.find(c => c.id === checkpointId)
       if (cp) { cp.hitRate = updated.hitRate; cp.completed = true }
       const list = document.getElementById('exams-list')
-      if (list) list.innerHTML = planningExams.map(renderPlanExamCard).join('')
+      if (list) list.innerHTML = planningExams.map(renderExamCard).join('')
     }
   } catch { showToast('Erro ao registrar') }
 }
 
 // ── CARD RENDERERS ────────────────────────────────────────────────────────────
 
-function renderPlanTaskCard(task) {
+function renderTaskCard(task) {
   const allDone = task.topics.length > 0 && task.topics.every(tp => tp.state === 'exercises')
-  const safe = task.subjectName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
   const subColor = subjectColor(task.subjectName)
+  const safe = task.subjectName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
   const topics = task.topics.map(tp =>
     `<div style="display:flex;align-items:center;gap:8px;padding:3px 0">
-      <button id="topic-btn-${tp.id}" onclick="cycleTopicState('${task.id}','${tp.id}','${tp.state}')"
+      <button id="topic-btn-${tp.id}" onclick="cycleTopicState('${task.id}','${tp.id}')"
         style="background:none;border:none;cursor:pointer;font-size:15px;color:${planTopicColor(tp.state)};padding:0;line-height:1;flex-shrink:0">${planTopicIcon(tp.state)}</button>
       <span style="font-size:13px;color:var(--text-muted)">${tp.text}</span>
     </div>`
@@ -1668,14 +1659,14 @@ function renderPlanTaskCard(task) {
       <span id="task-done-badge-${task.id}" style="font-size:9px;font-family:monospace;color:var(--green);border:1px solid var(--green);padding:1px 5px;border-radius:4px;${allDone ? '' : 'display:none'}">CONCLUÍDA</span>
       <span style="font-size:10px;color:${subColor};background:${subColor}22;padding:2px 6px;border-radius:4px;flex-shrink:0">${task.subjectName}</span>
       ${task.totalTime > 0 ? `<span style="font-size:11px;color:var(--text-dim);flex-shrink:0">${fmtPlanSecs(task.totalTime)}</span>` : ''}
-      <button onclick="deletePlanTask('${task.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:18px;padding:0;line-height:1" title="Deletar">×</button>
+      <button onclick="deleteTask('${task.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:18px;padding:0;line-height:1" title="Deletar">×</button>
     </div>
     ${topics}
-    <button onclick="startTaskStudy('${task.id}')" style="margin-top:8px;padding:5px 12px;font-size:10px;font-family:monospace;letter-spacing:1px;font-weight:700;background:var(--accent);color:#000;border:none;border-radius:5px;cursor:pointer">▶ INICIAR</button>
+    <button onclick="startTask('${task.id}','${safe}')" style="margin-top:8px;padding:5px 12px;font-size:10px;font-family:monospace;letter-spacing:1px;font-weight:700;background:var(--accent);color:#000;border:none;border-radius:5px;cursor:pointer">▶ INICIAR</button>
   </div>`
 }
 
-function renderPlanExamCard(exam) {
+function renderExamCard(exam) {
   const now = new Date()
   const examDateObj = new Date(exam.examDate)
   const daysUntil = Math.ceil((examDateObj - now) / 86400000)
@@ -1698,7 +1689,7 @@ function renderPlanExamCard(exam) {
         <span style="font-size:10px;font-family:monospace;font-weight:700;color:var(--orange)">HOJE</span>
         <input id="cp-input-${cp.id}" type="number" min="0" max="100" placeholder="0–100"
           style="width:60px;background:var(--surface2);border:1px solid var(--surface4);color:var(--text);padding:3px 6px;border-radius:4px;font-size:11px;outline:none">
-        <button onclick="registerCheckpoint('${cp.id}','${exam.id}')"
+        <button onclick="registerHitRate('${exam.id}','${cp.id}')"
           style="padding:3px 10px;font-size:11px;background:var(--accent);color:#000;border:none;border-radius:4px;cursor:pointer;font-weight:600">Registrar</button>
       </div>`
     }
@@ -1707,12 +1698,12 @@ function renderPlanExamCard(exam) {
       <span style="font-size:10px;font-family:monospace;color:var(--text-dim)">PENDENTE</span>
     </div>`
   }).join('')
-  return `<div id="exam-card-plan-${exam.id}" style="background:var(--surface3);border:1px solid var(--surface4);border-radius:8px;padding:14px;margin-bottom:8px">
+  return `<div id="exam-card-${exam.id}" style="background:var(--surface3);border:1px solid var(--surface4);border-radius:8px;padding:14px;margin-bottom:8px">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:${exam.checkpoints?.length ? '10px' : '0'}">
       <span style="font-size:13px;font-weight:600;color:var(--text);flex:1">${exam.subjectName}</span>
       <span style="font-size:12px;color:var(--text-muted)">${dateStr}</span>
       <span style="font-size:12px;font-weight:600;color:${daysColor}">${daysText}</span>
-      <button onclick="deletePlanExam('${exam.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:18px;padding:0;line-height:1" title="Deletar">×</button>
+      <button onclick="deleteExam('${exam.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:18px;padding:0;line-height:1" title="Deletar">×</button>
     </div>
     ${checkpoints}
   </div>`
@@ -1721,10 +1712,10 @@ function renderPlanExamCard(exam) {
 // ── RENDER PLANNING ───────────────────────────────────────────────────────────
 
 function renderPlanning() {
-  const container = document.getElementById('planning-content')
+  const container = document.getElementById('view-planning')
   if (!container) return
 
-  const S  = 'background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:20px;margin-bottom:24px'
+  const S  = 'background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:20px'
   const LB = 'font-family:monospace;font-size:10px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase'
   const SB = 'padding:6px 12px;font-size:11px;border-radius:6px;border:1px solid var(--surface4);background:var(--surface3);color:var(--text-muted);cursor:pointer'
   const IS = 'width:100%;background:var(--surface2);border:1px solid var(--surface4);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;font-family:var(--sans);outline:none;margin-bottom:8px'
@@ -1749,7 +1740,7 @@ function renderPlanning() {
   const prioritiesSection = `<div style="${S}">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <span style="${LB}">Prioridades</span>
-      <button onclick="fetchPriorities()" style="${SB}">Atualizar prioridades</button>
+      <button onclick="updatePriorities()" style="${SB}">Atualizar prioridades</button>
     </div>
     <div id="priorities-list">${prioritiesInner}</div>
   </div>`
@@ -1757,7 +1748,7 @@ function renderPlanning() {
   const tasksSection = `<div style="${S}">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <span style="${LB}">Tarefas</span>
-      <button onclick="toggleNewTaskForm()" style="${SB}">+ Nova tarefa</button>
+      <button onclick="toggleTaskForm()" style="${SB}">+ Nova tarefa</button>
     </div>
     <div id="new-task-form" style="display:none;background:var(--surface3);border-radius:8px;padding:14px;margin-bottom:14px">
       <input id="task-title-input" placeholder="Título da tarefa" style="${IS}">
@@ -1765,16 +1756,16 @@ function renderPlanning() {
       <textarea id="task-topics-textarea" placeholder="Tópicos (um por linha)" rows="3" style="${IS}resize:vertical;"></textarea>
       <div style="display:flex;gap:8px">
         <button onclick="createTask()" style="${SB};background:var(--accent);color:#000;border-color:var(--accent)">Criar</button>
-        <button onclick="toggleNewTaskForm()" style="${SB}">Cancelar</button>
+        <button onclick="toggleTaskForm()" style="${SB}">Cancelar</button>
       </div>
     </div>
-    <div id="tasks-list">${planningTasks.length ? planningTasks.map(renderPlanTaskCard).join('') : '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma tarefa cadastrada</div>'}</div>
+    <div id="tasks-list">${planningTasks.length ? planningTasks.map(renderTaskCard).join('') : '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma tarefa cadastrada</div>'}</div>
   </div>`
 
   const examsSection = `<div style="${S}">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <span style="${LB}">Provas</span>
-      <button onclick="toggleNewExamForm()" style="${SB}">+ Adicionar prova</button>
+      <button onclick="toggleExamForm()" style="${SB}">+ Adicionar prova</button>
     </div>
     <div id="new-exam-form" style="display:none;background:var(--surface3);border-radius:8px;padding:14px;margin-bottom:14px">
       <input id="exam-new-subject" placeholder="Nome da matéria" style="${IS}">
@@ -1782,16 +1773,18 @@ function renderPlanning() {
       <textarea id="exam-new-notes" placeholder="Notas opcionais" rows="2" style="${IS}resize:vertical;"></textarea>
       <div style="display:flex;gap:8px">
         <button onclick="createExam()" style="${SB};background:var(--accent);color:#000;border-color:var(--accent)">Salvar</button>
-        <button onclick="toggleNewExamForm()" style="${SB}">Cancelar</button>
+        <button onclick="toggleExamForm()" style="${SB}">Cancelar</button>
       </div>
     </div>
-    <div id="exams-list">${planningExams.length ? planningExams.map(renderPlanExamCard).join('') : '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma prova cadastrada</div>'}</div>
+    <div id="exams-list">${planningExams.length ? planningExams.map(renderExamCard).join('') : '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma prova cadastrada</div>'}</div>
   </div>`
 
-  container.innerHTML = prioritiesSection + tasksSection + examsSection
-
-  const planView = document.getElementById('view-planning')
-  if (planView && !planView.querySelector('.view-spacer')) planView.insertAdjacentHTML('beforeend', '<div class="view-spacer" style="height:80px"></div>')
+  container.innerHTML = `<div style="max-width:860px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:24px">
+    ${prioritiesSection}
+    ${tasksSection}
+    ${examsSection}
+    <div style="height:80px"></div>
+  </div>`
 }
 
 async function loadPlanning() {
