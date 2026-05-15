@@ -214,31 +214,7 @@
 
     <!-- PLANNING -->
     <div class="view" id="view-planning">
-      <div style="max-width:600px;margin:0 auto">
-        <div class="card exam-card" id="exam-card">
-          <div class="card-label">Planejar prova</div>
-          <div class="exam-form">
-            <div class="exam-field">
-              <label class="exam-label">Matéria</label>
-              <input class="input exam-input" id="exam-subject" type="text" placeholder="Ex: Cálculo II">
-            </div>
-            <div class="exam-field">
-              <label class="exam-label">Data da prova</label>
-              <input class="input exam-input" id="exam-date" type="date">
-            </div>
-            <div class="exam-field">
-              <label class="exam-label">Tópicos (um por linha)</label>
-              <textarea class="input exam-textarea" id="exam-topics" placeholder="Derivadas&#10;Integrais&#10;Limites"></textarea>
-            </div>
-            <div class="exam-field">
-              <label class="exam-label">Horas estimadas</label>
-              <input class="input exam-input" id="exam-hours" type="number" min="0.5" step="0.5" placeholder="Ex: 10">
-            </div>
-          </div>
-          <div id="exam-result" style="display:none;margin-top:12px"></div>
-          <button class="btn btn-exam" id="exam-btn" onclick="handleExamPlan()">Gerar plano</button>
-        </div>
-      </div>
+      <div id="planning-content"></div>
     </div>
 
     <!-- HISTORY -->

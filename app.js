@@ -53,6 +53,11 @@ let pauseSeconds    = 0;
 let studyingConstant = null;
 let dragSrcIdx      = null;
 
+// ── PLANNING STATE ──
+let planningTasks = []
+let planningExams = []
+let planningPriorities = []
+
 // ── POMODORO STATE ──
 let pomoActive       = false;
 let pomoPhase        = 'focus';   // 'focus' | 'break'
@@ -351,6 +356,13 @@ function formatShort(s) {
   if (h > 0) return `${h}h ${m}m`;
   if (m > 0) return `${m}m ${sec}s`;
   return `${sec}s`;
+}
+
+function fmtPlanSecs(secs) {
+  const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60)
+  if (h > 0) return m > 0 ? `${h}h ${m}min` : `${h}h`
+  if (m > 0) return `${m}min`
+  return secs > 0 ? `${secs}s` : '—'
 }
 
 // ── GOAL PROGRESS ──
@@ -1359,33 +1371,356 @@ function showView(name) {
   if (name === 'history')   renderHistory();
   if (name === 'dashboard') renderDashboard();
   if (name === 'progress')  renderProgress();
-  if (name === 'planning')  renderPlanning();
+  if (name === 'planning')  loadPlanning();
 }
 
 // ── PLANNING VIEW ──
-function renderPlanning() {
-  if (!document.getElementById('planning-header')) {
-    const container = document.querySelector('#view-planning > div')
-    if (container) {
-      container.insertAdjacentHTML('beforebegin', `
-        <div id="planning-header" style="max-width:600px;margin:0 auto 28px auto">
-          <h2 style="font-size:20px;font-weight:600;color:var(--text);margin:0 0 6px 0">Planejamento de Provas</h2>
-          <p style="font-size:13px;color:var(--text-muted);margin:0;line-height:1.6">Informe sua prova e a IA sugere os melhores momentos de estudo com base na sua agenda do Google Calendar.</p>
-        </div>`)
-    }
+// ── PLANNING HELPERS ──────────────────────────────────────────────────────────
+
+function planUrgencyInfo(level) {
+  const map = {
+    critical: ['CRÍTICO', 'var(--red)'],
+    high:     ['ALTO',    'var(--orange)'],
+    medium:   ['MÉDIO',   'var(--accent)'],
+    low:      ['BAIXO',   'var(--text-dim)'],
   }
-  const btn = document.getElementById('exam-btn')
-  if (btn) {
-    Object.assign(btn.style, {
-      background: 'var(--accent)', color: '#000000', fontWeight: '700',
-      height: '44px', border: 'none', borderRadius: '8px',
-      cursor: 'pointer', transition: 'opacity 0.2s', width: '100%', opacity: '1',
+  return map[level] ?? ['—', 'var(--text-dim)']
+}
+function planTopicIcon(s)  { return s === 'theory' ? '◑' : s === 'exercises' ? '●' : '○' }
+function planTopicColor(s) { return s === 'theory' ? 'var(--accent)' : s === 'exercises' ? 'var(--green)' : 'var(--text-dim)' }
+function planNextState(s)  { return s === 'pending' ? 'theory' : s === 'theory' ? 'exercises' : 'pending' }
+
+// ── PLANNING ACTIONS ──────────────────────────────────────────────────────────
+
+async function fetchPriorities() {
+  const el = document.getElementById('priorities-list')
+  if (!el) return
+  el.innerHTML = `<div style="color:var(--text-dim);font-size:12px;padding:8px 0">Carregando...</div>`
+  try {
+    const subjects = state.subjects.map(s => ({ name: sName(s), weeklyGoalMinutes: sGoal(s) * 7 }))
+    const res = await fetch(`${API_URL}/api/priorities`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: USER_ID, subjects }),
     })
-    btn.onmouseenter = () => { btn.style.opacity = '0.85' }
-    btn.onmouseleave = () => { btn.style.opacity = '1' }
+    if (!res.ok) throw new Error()
+    const data = await res.json()
+    planningPriorities = data.priorities ?? []
+    renderPrioritiesList()
+  } catch {
+    el.innerHTML = `<div style="color:var(--danger);font-size:12px">Erro ao carregar. Tente novamente.</div>`
   }
+}
+
+function renderPrioritiesList() {
+  const el = document.getElementById('priorities-list')
+  if (!el) return
+  if (!planningPriorities.length) {
+    el.innerHTML = `<div style="color:var(--text-dim);text-align:center;font-size:12px;padding:16px 0">Clique em "Atualizar prioridades" para ver suas prioridades</div>`
+    return
+  }
+  el.innerHTML = planningPriorities.map(p => {
+    const [lbl, col] = planUrgencyInfo(p.urgencyLevel)
+    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--surface3)">
+      <span style="background:${col};color:#000;font-size:9px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:4px;flex-shrink:0;margin-top:2px;white-space:nowrap">${lbl}</span>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${p.subjectName}</div>
+        <div style="font-size:12px;color:var(--text-muted);font-style:italic">${p.reason}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${p.pendingTopics} tópico${p.pendingTopics !== 1 ? 's' : ''} pendente${p.pendingTopics !== 1 ? 's' : ''}</div>
+      </div>
+    </div>`
+  }).join('')
+}
+
+function toggleNewTaskForm() {
+  const f = document.getElementById('new-task-form')
+  if (!f) return
+  const open = f.style.display !== 'none'
+  f.style.display = open ? 'none' : 'block'
+  if (!open) {
+    const sel = document.getElementById('task-subject-select')
+    if (sel) sel.innerHTML = '<option value="">Selecionar matéria...</option>' +
+      state.subjects.map(s => `<option value="${sName(s).replace(/"/g,'&quot;')}">${sName(s)}</option>`).join('')
+  }
+}
+
+async function createTask() {
+  const title = (document.getElementById('task-title-input')?.value || '').trim()
+  const subjectName = document.getElementById('task-subject-select')?.value || ''
+  const raw = document.getElementById('task-topics-textarea')?.value || ''
+  const topics = raw.split('\n').map(t => t.trim()).filter(Boolean)
+  if (!title || !subjectName) { showToast('Preencha título e matéria'); return }
+  try {
+    const res = await fetch(`${API_URL}/api/tasks`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: USER_ID, title, subjectName, topics }),
+    })
+    if (!res.ok) throw new Error()
+    const task = await res.json()
+    planningTasks.push(task)
+    const list = document.getElementById('tasks-list')
+    if (list) list.innerHTML = planningTasks.map(renderPlanTaskCard).join('')
+    toggleNewTaskForm()
+  } catch { showToast('Erro ao criar tarefa') }
+}
+
+async function deletePlanTask(id) {
+  try {
+    await fetch(`${API_URL}/api/tasks/${id}`, { method: 'DELETE' })
+    planningTasks = planningTasks.filter(t => t.id !== id)
+    document.getElementById(`task-card-${id}`)?.remove()
+    const list = document.getElementById('tasks-list')
+    if (list && !list.querySelector('[id^="task-card-"]'))
+      list.innerHTML = `<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma tarefa cadastrada</div>`
+  } catch { showToast('Erro ao deletar tarefa') }
+}
+
+async function cycleTopicState(taskId, topicId, currentState) {
+  const next = planNextState(currentState)
+  const btn = document.getElementById(`topic-btn-${topicId}`)
+  if (btn) {
+    btn.textContent = planTopicIcon(next)
+    btn.style.color = planTopicColor(next)
+    btn.setAttribute('onclick', `cycleTopicState('${taskId}','${topicId}','${next}')`)
+  }
+  const task = planningTasks.find(t => t.id === taskId)
+  if (task) {
+    const topic = task.topics.find(tp => tp.id === topicId)
+    if (topic) topic.state = next
+    const allDone = task.topics.length > 0 && task.topics.every(tp => tp.state === 'exercises')
+    const card = document.getElementById(`task-card-${taskId}`)
+    if (card) card.style.borderColor = allDone ? 'var(--green)' : 'var(--surface4)'
+    const badge = document.getElementById(`task-done-badge-${taskId}`)
+    if (badge) badge.style.display = allDone ? '' : 'none'
+  }
+  try {
+    await fetch(`${API_URL}/api/tasks/${taskId}/topics/${topicId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state: next }),
+    })
+  } catch { showToast('Erro ao salvar') }
+}
+
+function startTaskStudy(subjectName) {
+  const idx = state.subjects.findIndex(s => sName(s) === subjectName)
+  if (idx >= 0) { studyingConstant = null; state.currentIndex = idx }
+  else studyingConstant = subjectName
+  showView('dashboard')
+}
+
+function toggleNewExamForm() {
+  const f = document.getElementById('new-exam-form')
+  if (f) f.style.display = f.style.display !== 'none' ? 'none' : 'block'
+}
+
+async function createExam() {
+  const subjectName = (document.getElementById('exam-new-subject')?.value || '').trim()
+  const examDate = document.getElementById('exam-new-date')?.value || ''
+  const notes = (document.getElementById('exam-new-notes')?.value || '').trim() || undefined
+  if (!subjectName || !examDate) { showToast('Preencha matéria e data'); return }
+  try {
+    const res = await fetch(`${API_URL}/api/exams`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: USER_ID, subjectName, examDate, notes }),
+    })
+    if (!res.ok) throw new Error()
+    const exam = await res.json()
+    planningExams.push(exam)
+    planningExams.sort((a, b) => new Date(a.examDate) - new Date(b.examDate))
+    const list = document.getElementById('exams-list')
+    if (list) list.innerHTML = planningExams.map(renderPlanExamCard).join('')
+    toggleNewExamForm()
+  } catch { showToast('Erro ao criar prova') }
+}
+
+async function deletePlanExam(id) {
+  try {
+    await fetch(`${API_URL}/api/exams/${id}`, { method: 'DELETE' })
+    planningExams = planningExams.filter(e => e.id !== id)
+    document.getElementById(`exam-card-plan-${id}`)?.remove()
+    const list = document.getElementById('exams-list')
+    if (list && !list.querySelector('[id^="exam-card-plan-"]'))
+      list.innerHTML = `<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma prova cadastrada</div>`
+  } catch { showToast('Erro ao deletar prova') }
+}
+
+async function registerCheckpoint(checkpointId, examId) {
+  const input = document.getElementById(`cp-input-${checkpointId}`)
+  if (!input) return
+  const hitRate = parseFloat(input.value)
+  if (isNaN(hitRate) || hitRate < 0 || hitRate > 100) { showToast('Taxa deve ser 0–100'); return }
+  try {
+    const res = await fetch(`${API_URL}/api/exams/${examId}/checkpoints/${checkpointId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hitRate }),
+    })
+    if (!res.ok) throw new Error()
+    const updated = await res.json()
+    const exam = planningExams.find(e => e.id === examId)
+    if (exam) {
+      const cp = exam.checkpoints.find(c => c.id === checkpointId)
+      if (cp) { cp.hitRate = updated.hitRate; cp.completed = true }
+      const list = document.getElementById('exams-list')
+      if (list) list.innerHTML = planningExams.map(renderPlanExamCard).join('')
+    }
+  } catch { showToast('Erro ao registrar') }
+}
+
+// ── CARD RENDERERS ────────────────────────────────────────────────────────────
+
+function renderPlanTaskCard(task) {
+  const allDone = task.topics.length > 0 && task.topics.every(tp => tp.state === 'exercises')
+  const safe = task.subjectName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+  const subColor = subjectColor(task.subjectName)
+  const topics = task.topics.map(tp =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:3px 0">
+      <button id="topic-btn-${tp.id}" onclick="cycleTopicState('${task.id}','${tp.id}','${tp.state}')"
+        style="background:none;border:none;cursor:pointer;font-size:15px;color:${planTopicColor(tp.state)};padding:0;line-height:1;flex-shrink:0">${planTopicIcon(tp.state)}</button>
+      <span style="font-size:13px;color:var(--text-muted)">${tp.text}</span>
+    </div>`
+  ).join('')
+  return `<div id="task-card-${task.id}" style="background:var(--surface3);border:1px solid ${allDone ? 'var(--green)' : 'var(--surface4)'};border-radius:8px;padding:14px;margin-bottom:8px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:${task.topics.length ? '10px' : '4px'}">
+      <span style="font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:0">${task.title}</span>
+      <span id="task-done-badge-${task.id}" style="font-size:9px;font-family:monospace;color:var(--green);border:1px solid var(--green);padding:1px 5px;border-radius:4px;${allDone ? '' : 'display:none'}">CONCLUÍDA</span>
+      <span style="font-size:10px;color:${subColor};background:${subColor}22;padding:2px 6px;border-radius:4px;flex-shrink:0">${task.subjectName}</span>
+      ${task.totalTime > 0 ? `<span style="font-size:11px;color:var(--text-dim);flex-shrink:0">${fmtPlanSecs(task.totalTime)}</span>` : ''}
+      <button onclick="deletePlanTask('${task.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:18px;padding:0;line-height:1" title="Deletar">×</button>
+    </div>
+    ${topics}
+    <button onclick="startTaskStudy('${safe}')" style="margin-top:8px;padding:5px 12px;font-size:10px;font-family:monospace;letter-spacing:1px;font-weight:700;background:var(--accent);color:#000;border:none;border-radius:5px;cursor:pointer">▶ INICIAR</button>
+  </div>`
+}
+
+function renderPlanExamCard(exam) {
+  const now = new Date()
+  const examDateObj = new Date(exam.examDate)
+  const daysUntil = Math.ceil((examDateObj - now) / 86400000)
+  const dateStr = examDateObj.toLocaleDateString('pt-BR')
+  const daysColor = daysUntil < 7 ? 'var(--orange)' : 'var(--text-muted)'
+  const daysText = daysUntil > 0 ? `${daysUntil} dias` : daysUntil === 0 ? 'HOJE' : 'PASSOU'
+  const checkpoints = (exam.checkpoints ?? []).map(cp => {
+    const isPast = new Date(cp.scheduledDate) <= now
+    if (cp.completed) {
+      const pct = cp.hitRate ?? 0
+      const col = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--orange)' : 'var(--red)'
+      return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0">
+        <span style="font-size:11px;color:var(--text-dim);min-width:90px">${cp.daysBeforeExam}d antes</span>
+        <span style="font-size:12px;font-weight:600;color:${col}">${pct.toFixed(0)}% de acertos</span>
+      </div>`
+    }
+    if (isPast) {
+      return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text-dim);min-width:90px">${cp.daysBeforeExam}d antes</span>
+        <span style="font-size:10px;font-family:monospace;font-weight:700;color:var(--orange)">HOJE</span>
+        <input id="cp-input-${cp.id}" type="number" min="0" max="100" placeholder="0–100"
+          style="width:60px;background:var(--surface2);border:1px solid var(--surface4);color:var(--text);padding:3px 6px;border-radius:4px;font-size:11px;outline:none">
+        <button onclick="registerCheckpoint('${cp.id}','${exam.id}')"
+          style="padding:3px 10px;font-size:11px;background:var(--accent);color:#000;border:none;border-radius:4px;cursor:pointer;font-weight:600">Registrar</button>
+      </div>`
+    }
+    return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0">
+      <span style="font-size:11px;color:var(--text-dim);min-width:90px">${cp.daysBeforeExam}d antes</span>
+      <span style="font-size:10px;font-family:monospace;color:var(--text-dim)">PENDENTE</span>
+    </div>`
+  }).join('')
+  return `<div id="exam-card-plan-${exam.id}" style="background:var(--surface3);border:1px solid var(--surface4);border-radius:8px;padding:14px;margin-bottom:8px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:${exam.checkpoints?.length ? '10px' : '0'}">
+      <span style="font-size:13px;font-weight:600;color:var(--text);flex:1">${exam.subjectName}</span>
+      <span style="font-size:12px;color:var(--text-muted)">${dateStr}</span>
+      <span style="font-size:12px;font-weight:600;color:${daysColor}">${daysText}</span>
+      <button onclick="deletePlanExam('${exam.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:18px;padding:0;line-height:1" title="Deletar">×</button>
+    </div>
+    ${checkpoints}
+  </div>`
+}
+
+// ── RENDER PLANNING ───────────────────────────────────────────────────────────
+
+function renderPlanning() {
+  const container = document.getElementById('planning-content')
+  if (!container) return
+
+  const S  = 'background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:20px;margin-bottom:24px'
+  const LB = 'font-family:monospace;font-size:10px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase'
+  const SB = 'padding:6px 12px;font-size:11px;border-radius:6px;border:1px solid var(--surface4);background:var(--surface3);color:var(--text-muted);cursor:pointer'
+  const IS = 'width:100%;background:var(--surface2);border:1px solid var(--surface4);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;font-family:var(--sans);outline:none;margin-bottom:8px'
+
+  const subjectOptions = '<option value="">Selecionar matéria...</option>' +
+    state.subjects.map(s => `<option value="${sName(s).replace(/"/g,'&quot;')}">${sName(s)}</option>`).join('')
+
+  const prioritiesInner = !planningPriorities.length
+    ? `<div style="color:var(--text-dim);text-align:center;font-size:12px;padding:16px 0">Clique em "Atualizar prioridades" para ver suas prioridades</div>`
+    : planningPriorities.map(p => {
+        const [lbl, col] = planUrgencyInfo(p.urgencyLevel)
+        return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--surface3)">
+          <span style="background:${col};color:#000;font-size:9px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:4px;flex-shrink:0;margin-top:2px;white-space:nowrap">${lbl}</span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${p.subjectName}</div>
+            <div style="font-size:12px;color:var(--text-muted);font-style:italic">${p.reason}</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${p.pendingTopics} tópico${p.pendingTopics !== 1 ? 's' : ''} pendente${p.pendingTopics !== 1 ? 's' : ''}</div>
+          </div>
+        </div>`
+      }).join('')
+
+  const prioritiesSection = `<div style="${S}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="${LB}">Prioridades</span>
+      <button onclick="fetchPriorities()" style="${SB}">Atualizar prioridades</button>
+    </div>
+    <div id="priorities-list">${prioritiesInner}</div>
+  </div>`
+
+  const tasksSection = `<div style="${S}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="${LB}">Tarefas</span>
+      <button onclick="toggleNewTaskForm()" style="${SB}">+ Nova tarefa</button>
+    </div>
+    <div id="new-task-form" style="display:none;background:var(--surface3);border-radius:8px;padding:14px;margin-bottom:14px">
+      <input id="task-title-input" placeholder="Título da tarefa" style="${IS}">
+      <select id="task-subject-select" style="${IS}">${subjectOptions}</select>
+      <textarea id="task-topics-textarea" placeholder="Tópicos (um por linha)" rows="3" style="${IS}resize:vertical;"></textarea>
+      <div style="display:flex;gap:8px">
+        <button onclick="createTask()" style="${SB};background:var(--accent);color:#000;border-color:var(--accent)">Criar</button>
+        <button onclick="toggleNewTaskForm()" style="${SB}">Cancelar</button>
+      </div>
+    </div>
+    <div id="tasks-list">${planningTasks.length ? planningTasks.map(renderPlanTaskCard).join('') : '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma tarefa cadastrada</div>'}</div>
+  </div>`
+
+  const examsSection = `<div style="${S}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="${LB}">Provas</span>
+      <button onclick="toggleNewExamForm()" style="${SB}">+ Adicionar prova</button>
+    </div>
+    <div id="new-exam-form" style="display:none;background:var(--surface3);border-radius:8px;padding:14px;margin-bottom:14px">
+      <input id="exam-new-subject" placeholder="Nome da matéria" style="${IS}">
+      <input id="exam-new-date" type="date" style="${IS}">
+      <textarea id="exam-new-notes" placeholder="Notas opcionais" rows="2" style="${IS}resize:vertical;"></textarea>
+      <div style="display:flex;gap:8px">
+        <button onclick="createExam()" style="${SB};background:var(--accent);color:#000;border-color:var(--accent)">Salvar</button>
+        <button onclick="toggleNewExamForm()" style="${SB}">Cancelar</button>
+      </div>
+    </div>
+    <div id="exams-list">${planningExams.length ? planningExams.map(renderPlanExamCard).join('') : '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma prova cadastrada</div>'}</div>
+  </div>`
+
+  container.innerHTML = prioritiesSection + tasksSection + examsSection
+
   const planView = document.getElementById('view-planning')
   if (planView && !planView.querySelector('.view-spacer')) planView.insertAdjacentHTML('beforeend', '<div class="view-spacer" style="height:80px"></div>')
+}
+
+async function loadPlanning() {
+  if (!USER_ID) { renderPlanning(); return }
+  try {
+    const [tRes, eRes] = await Promise.all([
+      fetch(`${API_URL}/api/tasks?userId=${USER_ID}`),
+      fetch(`${API_URL}/api/exams?userId=${USER_ID}`),
+    ])
+    if (tRes.ok) planningTasks = await tRes.json()
+    if (eRes.ok) planningExams = await eRes.json()
+  } catch {}
+  renderPlanning()
 }
 
 // ── PROGRESS VIEW ──
