@@ -839,9 +839,9 @@ function buildConsistencyGraph() {
 
   const COLORS = [
     'var(--surface3)',
-    'rgba(77,159,255,0.2)',
-    'rgba(77,159,255,0.4)',
-    'rgba(77,159,255,0.65)',
+    'color-mix(in srgb, var(--accent) 20%, transparent)',
+    'color-mix(in srgb, var(--accent) 40%, transparent)',
+    'color-mix(in srgb, var(--accent) 65%, transparent)',
     'var(--accent)',
   ];
   const MONTH_NAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -1779,7 +1779,7 @@ function renderPlanning() {
     <div id="exams-list">${planningExams.length ? planningExams.map(renderExamCard).join('') : '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma prova cadastrada</div>'}</div>
   </div>`
 
-  container.innerHTML = `<div style="max-width:860px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:24px">
+  container.innerHTML = `<div style="max-width:860px;margin:0 auto;padding:24px 24px;display:flex;flex-direction:column;gap:24px">
     ${prioritiesSection}
     ${tasksSection}
     ${examsSection}

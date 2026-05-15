@@ -649,6 +649,7 @@ header {
   .modal { width: calc(100% - 32px); }
   .kbd-hint { bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
   .toast { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  #view-planning > div { padding: 16px !important; }
 }
 
 @media (max-width: 480px) {
