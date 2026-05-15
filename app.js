@@ -1715,19 +1715,7 @@ async function createExam() {
         USER_ID = null
         localStorage.removeItem('ciclo-user-id')
         await initSync()
-        if (!USER_ID) { showToast('Sem conexão com o servidor'); return }
-        const retry = await fetch(`${API_URL}/api/exams`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: USER_ID, subjectName, examDate, notes }),
-        })
-        if (!retry.ok) { showToast('Erro ao criar prova'); return }
-        const exam = await retry.json()
-        planningExams.push(exam)
-        planningExams.sort((a, b) => new Date(a.examDate) - new Date(b.examDate))
-        const list = document.getElementById('exams-list')
-        if (list) list.innerHTML = planningExams.map(renderExamCard).join('')
-        toggleExamForm()
-        showToast('Prova adicionada', 'success')
+        showToast('Sessão reiniciada — tente novamente')
         return
       }
       throw new Error()
