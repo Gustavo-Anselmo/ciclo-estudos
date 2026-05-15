@@ -1703,36 +1703,41 @@ async function createExam() {
   const notes = (document.getElementById('exam-new-notes')?.value || '').trim() || undefined
   if (!subjectName || !examDateInput) { showToast('Preencha matéria e data'); return }
   const examDate = new Date(examDateInput).toISOString()
-  try {
-    await ensureUser()
-    const res = await fetch(`${API_URL}/api/exams`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+
+  async function doPost() {
+    return fetch(`${API_URL}/api/exams`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: USER_ID, subjectName, examDate, notes }),
     })
-    if (!res.ok) {
+  }
+
+  try {
+    await ensureUser()
+    let res = await doPost()
+
+    if (res.status === 404) {
       const err = await res.json().catch(() => ({}))
       if (err.error === 'USER_NOT_FOUND') {
         USER_ID = null
         localStorage.removeItem('ciclo-user-id')
         await initSync()
-        showToast('Sessão reiniciada — tente novamente')
-        return
+        if (!USER_ID) { showToast('Sem conexão com o servidor'); return }
+        res = await doPost()
       }
-      throw new Error()
     }
+
+    if (!res.ok) { showToast('Erro ao criar prova'); return }
+
     const exam = await res.json()
     planningExams.push(exam)
     planningExams.sort((a, b) => new Date(a.examDate) - new Date(b.examDate))
     const list = document.getElementById('exams-list')
     if (list) list.innerHTML = planningExams.map(renderExamCard).join('')
     toggleExamForm()
-    showToast('Prova adicionada', 'success')
-  } catch (e) {
-    if (e.message === 'USER_UNAVAILABLE') {
-      showToast('Sem conexão com o servidor')
-    } else {
-      showToast('Erro ao criar prova')
-    }
+    showToast('Prova adicionada')
+  } catch {
+    showToast('Erro ao criar prova')
   }
 }
 
