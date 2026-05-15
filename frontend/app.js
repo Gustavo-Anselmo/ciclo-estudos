@@ -145,6 +145,13 @@ async function initSync() {
   }
 }
 
+async function ensureUser() {
+  if (!USER_ID) {
+    await initSync()
+  }
+  if (!USER_ID) throw new Error('USER_UNAVAILABLE')
+}
+
 // ── AUDIO / VIBRATION ──
 function playBeep() {
   try {
@@ -1695,21 +1702,38 @@ async function createExam() {
   const examDateInput = document.getElementById('exam-new-date')?.value || ''
   const notes = (document.getElementById('exam-new-notes')?.value || '').trim() || undefined
   if (!subjectName || !examDateInput) { showToast('Preencha matéria e data'); return }
-  if (!USER_ID) { showToast('Configure seu ID de usuário nas configurações'); return }
   const examDate = new Date(examDateInput).toISOString()
   try {
+    await ensureUser()
     const res = await fetch(`${API_URL}/api/exams`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: USER_ID, subjectName, examDate, notes }),
     })
-    if (!res.ok) throw new Error()
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      if (err.error === 'USER_NOT_FOUND') {
+        USER_ID = null
+        localStorage.removeItem('ciclo-user-id')
+        await initSync()
+        showToast('Sessão reiniciada — tente novamente')
+        return
+      }
+      throw new Error()
+    }
     const exam = await res.json()
     planningExams.push(exam)
     planningExams.sort((a, b) => new Date(a.examDate) - new Date(b.examDate))
     const list = document.getElementById('exams-list')
     if (list) list.innerHTML = planningExams.map(renderExamCard).join('')
     toggleExamForm()
-  } catch { showToast('Erro ao criar prova') }
+    showToast('Prova adicionada', 'success')
+  } catch (e) {
+    if (e.message === 'USER_UNAVAILABLE') {
+      showToast('Sem conexão com o servidor')
+    } else {
+      showToast('Erro ao criar prova')
+    }
+  }
 }
 
 async function deleteExam(id) {
