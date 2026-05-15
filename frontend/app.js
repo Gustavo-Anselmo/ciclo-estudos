@@ -1926,14 +1926,23 @@ function renderPlanning() {
 
 async function loadPlanning() {
   if (!USER_ID) { renderPlanning(); return }
+  const timeout = (ms) => new Promise((_, rej) =>
+    setTimeout(() => rej(new Error('TIMEOUT')), ms))
   try {
-    const [tRes, eRes] = await Promise.all([
-      fetch(`${API_URL}/api/tasks?userId=${USER_ID}`),
-      fetch(`${API_URL}/api/exams?userId=${USER_ID}`),
+    const [tRes, eRes] = await Promise.race([
+      Promise.all([
+        fetch(`${API_URL}/api/tasks?userId=${USER_ID}`),
+        fetch(`${API_URL}/api/exams?userId=${USER_ID}`),
+      ]),
+      timeout(10000).then(() => { throw new Error('TIMEOUT') })
     ])
     if (tRes.ok) planningTasks = await tRes.json()
     if (eRes.ok) planningExams = await eRes.json()
-  } catch {}
+  } catch (e) {
+    if (e.message === 'TIMEOUT') {
+      showToast('Servidor demorando — exibindo dados locais')
+    }
+  }
   renderPlanning()
 }
 
