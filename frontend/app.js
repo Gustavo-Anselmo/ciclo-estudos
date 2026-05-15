@@ -1695,6 +1695,7 @@ async function createExam() {
   const examDateInput = document.getElementById('exam-new-date')?.value || ''
   const notes = (document.getElementById('exam-new-notes')?.value || '').trim() || undefined
   if (!subjectName || !examDateInput) { showToast('Preencha matéria e data'); return }
+  if (!USER_ID) { showToast('Configure seu ID de usuário nas configurações'); return }
   const examDate = new Date(examDateInput).toISOString()
   try {
     const res = await fetch(`${API_URL}/api/exams`, {
@@ -1712,6 +1713,7 @@ async function createExam() {
 }
 
 async function deleteExam(id) {
+  if (!USER_ID) { showToast('Configure seu ID de usuário nas configurações'); return }
   try {
     await fetch(`${API_URL}/api/exams/${id}`, { method: 'DELETE' })
     planningExams = planningExams.filter(e => e.id !== id)
@@ -1727,6 +1729,7 @@ async function registerHitRate(examId, checkpointId) {
   if (!input) return
   const hitRate = parseFloat(input.value)
   if (isNaN(hitRate) || hitRate < 0 || hitRate > 100) { showToast('Taxa deve ser 0–100'); return }
+  if (!USER_ID) { showToast('Configure seu ID de usuário nas configurações'); return }
   try {
     const res = await fetch(`${API_URL}/api/exams/${examId}/checkpoints/${checkpointId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
