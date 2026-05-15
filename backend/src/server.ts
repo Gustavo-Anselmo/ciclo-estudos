@@ -62,7 +62,7 @@ await app.register(authRoutes)
 await app.register(calendarRoutes)
 await app.register(examRoutes)
 await app.register(taskRoutes)
-await app.register(examCrudRoutes)
+await app.register(examCrudRoutes) // exams CRUD
 await app.register(priorityRoutes)
 await app.register(notificationRoutes)
 await app.register(progressRoutes)
