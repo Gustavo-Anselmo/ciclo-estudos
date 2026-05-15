@@ -57,6 +57,7 @@ let dragSrcIdx      = null;
 let planningTasks = []
 let planningExams = []
 let planningPriorities = []
+let activeTask = null
 
 // ── POMODORO STATE ──
 let pomoActive       = false;
@@ -311,6 +312,20 @@ function finishSession() {
         }).catch(() => {})
       }
 
+      if (activeTask) {
+        const newTotal = (activeTask.totalTime || 0) + newSession.duration
+        if (USER_ID) {
+          fetch(`${API_URL}/api/tasks/${activeTask.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ totalTime: newTotal })
+          }).catch(() => {})
+        }
+        activeTask.totalTime = newTotal
+        const tidx = planningTasks.findIndex(t => t.id === activeTask.id)
+        if (tidx !== -1) planningTasks[tidx].totalTime = newTotal
+      }
+
       playBeep(); doVibrate([200, 100, 200]);
       showToast(`${subjectName} — ${formatTime(duration)} registrado`);
 
@@ -431,6 +446,56 @@ function renderDashStats() {
   ].join('')
 }
 
+function renderDashPriorities() {
+  let el = document.getElementById('dash-priorities')
+  if (!el) {
+    const stats = document.getElementById('dash-stats')
+    if (!stats) return
+    stats.insertAdjacentHTML('beforebegin', '<div id="dash-priorities"></div>')
+    el = document.getElementById('dash-priorities')
+    if (!el) return
+  }
+  const top2 = planningPriorities.slice(0, 2)
+  if (!top2.length) {
+    el.innerHTML = `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:16px 20px;margin-top:16px">
+      <div style="font-family:monospace;font-size:10px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Foco agora</div>
+      <div style="color:var(--text-dim);font-size:12px">Defina suas prioridades na aba Planejamento</div>
+    </div>`
+    return
+  }
+  const items = top2.map(p => {
+    const [lbl, col] = planUrgencyInfo(p.urgencyLevel)
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0">
+      <span style="background:${col};color:#000;font-size:9px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:1px 5px;border-radius:4px;flex-shrink:0;white-space:nowrap">${lbl}</span>
+      <div style="min-width:0;flex:1">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">${p.subjectName}</div>
+        <div style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.reason}</div>
+      </div>
+    </div>`
+  }).join('')
+  el.innerHTML = `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:16px 20px;margin-top:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span style="font-family:monospace;font-size:10px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase">Foco agora</span>
+      <button onclick="showView('planning')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);padding:0">ver todas →</button>
+    </div>
+    ${items}
+  </div>`
+}
+
+function showCompletionToast(msg) {
+  let t = document.getElementById('completion-toast')
+  if (!t) {
+    t = document.createElement('div')
+    t.id = 'completion-toast'
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green-dim);color:var(--green);border:1px solid var(--green);border-radius:8px;padding:12px 16px;font-size:13px;z-index:500;white-space:nowrap;pointer-events:none;display:none'
+    document.body.appendChild(t)
+  }
+  t.textContent = msg
+  t.style.display = 'block'
+  clearTimeout(t._timer)
+  t._timer = setTimeout(() => { t.style.display = 'none' }, 4000)
+}
+
 function renderDashboard() {
   const nameEl    = document.getElementById('current-subject-name');
   const nextList  = document.getElementById('next-list');
@@ -440,15 +505,26 @@ function renderDashboard() {
   if (!state.subjects.length && studyingConstant === null) {
     nameEl.textContent = 'Nenhuma matéria cadastrada';
     nameEl.className = 'subject-name empty';
+    document.getElementById('active-task-label')?.remove()
     nextList.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:4px 0">—</div>';
     cycleEl.innerHTML = '';
     if (todayList) todayList.innerHTML = '<div style="font-size:12px;color:var(--text-dim)">Nenhuma sessão hoje</div>';
-    renderConstantDashboard(); renderGoalProgress(); renderDashStats();
+    renderConstantDashboard(); renderGoalProgress(); renderDashStats(); renderDashPriorities();
     return;
   }
 
   nameEl.className = 'subject-name';
   nameEl.textContent = studyingConstant !== null ? studyingConstant : sName(state.subjects[state.currentIndex]);
+  let _taskLbl = document.getElementById('active-task-label')
+  if (activeTask) {
+    if (!_taskLbl) {
+      nameEl.insertAdjacentHTML('afterend', '<div id="active-task-label" style="font-size:12px;color:var(--accent);font-style:italic;margin-top:2px"></div>')
+      _taskLbl = document.getElementById('active-task-label')
+    }
+    if (_taskLbl) _taskLbl.textContent = `Tarefa: ${activeTask.title}`
+  } else if (_taskLbl) {
+    _taskLbl.remove()
+  }
 
   cycleEl.innerHTML = state.subjects.map((_, i) =>
     `<div class="cycle-dot ${i === state.currentIndex ? 'active' : ''}"></div>`
@@ -477,7 +553,7 @@ function renderDashboard() {
         `<div style="font-size:12px;color:var(--text-muted);padding:3px 0">${name} — ${formatShort(time)}</div>`
       ).join('');
 
-  renderConstantDashboard(); renderGoalProgress(); renderDashStats();
+  renderConstantDashboard(); renderGoalProgress(); renderDashStats(); renderDashPriorities();
   const dashView = document.getElementById('view-dashboard')
   if (dashView && !dashView.querySelector('.view-spacer')) dashView.insertAdjacentHTML('beforeend', '<div class="view-spacer" style="height:80px"></div>')
 }
@@ -1491,6 +1567,11 @@ async function cycleTopicState(taskId, topicId, currentState) {
     if (card) card.style.borderColor = allDone ? 'var(--green)' : 'var(--surface4)'
     const badge = document.getElementById(`task-done-badge-${taskId}`)
     if (badge) badge.style.display = allDone ? '' : 'none'
+    if (allDone && next === 'exercises') {
+      const subjs = state.subjects
+      const nextName = subjs.length > 0 ? sName(subjs[(state.currentIndex + 1) % subjs.length]) : ''
+      showCompletionToast(nextName ? `✓ Tarefa concluída! Próxima matéria: ${nextName}` : '✓ Tarefa concluída!')
+    }
   }
   try {
     await fetch(`${API_URL}/api/tasks/${taskId}/topics/${topicId}`, {
@@ -1500,10 +1581,13 @@ async function cycleTopicState(taskId, topicId, currentState) {
   } catch { showToast('Erro ao salvar') }
 }
 
-function startTaskStudy(subjectName) {
-  const idx = state.subjects.findIndex(s => sName(s) === subjectName)
+function startTaskStudy(taskId) {
+  const task = planningTasks.find(t => t.id === taskId)
+  if (!task) return
+  activeTask = task
+  const idx = state.subjects.findIndex(s => sName(s) === task.subjectName)
   if (idx >= 0) { studyingConstant = null; state.currentIndex = idx }
-  else studyingConstant = subjectName
+  else studyingConstant = task.subjectName
   showView('dashboard')
 }
 
@@ -1587,7 +1671,7 @@ function renderPlanTaskCard(task) {
       <button onclick="deletePlanTask('${task.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:18px;padding:0;line-height:1" title="Deletar">×</button>
     </div>
     ${topics}
-    <button onclick="startTaskStudy('${safe}')" style="margin-top:8px;padding:5px 12px;font-size:10px;font-family:monospace;letter-spacing:1px;font-weight:700;background:var(--accent);color:#000;border:none;border-radius:5px;cursor:pointer">▶ INICIAR</button>
+    <button onclick="startTaskStudy('${task.id}')" style="margin-top:8px;padding:5px 12px;font-size:10px;font-family:monospace;letter-spacing:1px;font-weight:700;background:var(--accent);color:#000;border:none;border-radius:5px;cursor:pointer">▶ INICIAR</button>
   </div>`
 }
 
