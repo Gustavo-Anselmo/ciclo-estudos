@@ -882,12 +882,6 @@ header {
   50%       { opacity: 0.3; }
 }
 
-.timer-card {
-  background: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
 .timer-display-wrap {
   position: absolute;
   inset: 0;
@@ -898,8 +892,8 @@ header {
 }
 
 #view-dashboard {
-  background: radial-gradient(ellipse 60% 40% at 40% 20%,
-    rgba(248,113,113,0.06) 0%, transparent 70%) !important;
+  background: radial-gradient(ellipse 50% 35% at 38% 15%,
+    rgba(248,113,113,0.07) 0%, transparent 65%);
 }
 
 .btn-timer-start {
@@ -934,4 +928,17 @@ header {
 .btn-timer-danger:disabled { opacity: 0.25; cursor: not-allowed; }
 .btn-timer-danger:not(:disabled):hover {
   background: var(--red-dim);
+}
+
+.timer-card {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.timer-card.running {
+  background: linear-gradient(180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--accent) 8%, transparent) 100%);
+  border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--accent) 10%, transparent);
 }
