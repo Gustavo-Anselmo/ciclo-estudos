@@ -380,7 +380,7 @@ function updateTimerRing() {
   const dot  = document.getElementById('timer-ring-dot')
   if (!ring) return
 
-  const r    = 152
+  const r    = 190
   const circ = 2 * Math.PI * r
 
   if (!timerRunning && timerSeconds === 0) {
@@ -411,8 +411,8 @@ function updateTimerRing() {
   // Dot: posiciona no fim do arco
   if (dot) {
     const angle = pct * 2 * Math.PI - Math.PI / 2
-    const cx = 160 + r * Math.cos(angle)
-    const cy = 160 + r * Math.sin(angle)
+    const cx = 200 + r * Math.cos(angle)
+    const cy = 200 + r * Math.sin(angle)
     dot.setAttribute('cx', String(cx))
     dot.setAttribute('cy', String(cy))
     dot.style.opacity = timerRunning ? '1' : '0.5'
@@ -627,39 +627,39 @@ function renderHoje() {
 }
 
 function renderDashPriorities() {
-  let el = document.getElementById('dash-priorities')
-  if (!el) {
-    const stats = document.getElementById('dash-stats')
-    if (!stats) return
-    stats.insertAdjacentHTML('beforebegin', '<div id="dash-priorities"></div>')
-    el = document.getElementById('dash-priorities')
-    if (!el) return
-  }
+  const el = document.getElementById('dash-priorities')
+  if (!el) return
+
   const top2 = planningPriorities.slice(0, 2)
   if (!top2.length) {
-    el.innerHTML = `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:16px 20px;margin-top:16px">
-      <div style="font-family:monospace;font-size:10px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Foco agora</div>
-      <div style="color:var(--text-dim);font-size:12px">Defina suas prioridades na aba Planejamento</div>
-    </div>`
+    el.innerHTML = `<div style="color:var(--text-dim);font-size:12px">
+      Defina suas prioridades na aba Planejamento</div>`
     return
   }
-  const items = top2.map(p => {
+
+  el.innerHTML = top2.map(p => {
     const [lbl, col] = planUrgencyInfo(p.urgencyLevel)
-    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0">
-      <span style="background:${col};color:#000;font-size:9px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:1px 5px;border-radius:4px;flex-shrink:0;white-space:nowrap">${lbl}</span>
+    return `<div style="display:flex;align-items:center;gap:8px;
+                        padding:6px 0;border-bottom:1px solid var(--surface3)">
+      <span style="background:${col};color:#000;font-size:9px;
+                   font-family:monospace;font-weight:700;letter-spacing:1px;
+                   padding:2px 6px;border-radius:4px;flex-shrink:0;
+                   white-space:nowrap">${lbl}</span>
       <div style="min-width:0;flex:1">
-        <div style="font-size:12px;font-weight:600;color:var(--text)">${p.subjectName}</div>
-        <div style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.reason}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text)">
+          ${p.subjectName}</div>
+        <div style="font-size:11px;color:var(--text-muted);overflow:hidden;
+                    text-overflow:ellipsis;white-space:nowrap">
+          ${p.reason}</div>
       </div>
     </div>`
-  }).join('')
-  el.innerHTML = `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:16px 20px;margin-top:16px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <span style="font-family:monospace;font-size:10px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase">Foco agora</span>
-      <button onclick="showView('planning')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);padding:0">ver todas →</button>
-    </div>
-    ${items}
-  </div>`
+  }).join('') +
+  `<button onclick="showView('planning')"
+    style="margin-top:10px;background:none;border:none;cursor:pointer;
+           font-size:11px;color:var(--accent);padding:0;
+           font-family:monospace;letter-spacing:1px">
+    VER TODAS →
+  </button>`
 }
 
 function showCompletionToast(msg) {

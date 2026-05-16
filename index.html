@@ -107,8 +107,8 @@
             <!-- Timer central com anel -->
             <div style="display:flex;align-items:center;
                         justify-content:center;padding:8px 0">
-              <div style="position:relative;width:320px;height:320px">
-                <svg width="320" height="320" viewBox="0 0 320 320"
+              <div style="position:relative;width:400px;height:400px">
+                <svg width="400" height="400" viewBox="0 0 400 400"
                   style="transform:rotate(-90deg);position:absolute;
                          top:0;left:0;pointer-events:none">
                   <defs>
@@ -118,19 +118,19 @@
                       <stop id="timer-grad-1" offset="100%" stop-color="#fb923c"/>
                     </linearGradient>
                   </defs>
-                  <circle cx="160" cy="160" r="152" fill="transparent"
+                  <circle cx="200" cy="200" r="190" fill="transparent"
                     stroke="rgba(248,113,113,0.1)" stroke-width="4"/>
-                  <circle id="timer-ring-fill" cx="160" cy="160" r="152"
+                  <circle id="timer-ring-fill" cx="200" cy="200" r="190"
                     fill="transparent" stroke="url(#timerGradient)"
                     stroke-width="4" stroke-linecap="round"
                     stroke-dasharray="955" stroke-dashoffset="955"
                     style="opacity:0;transition:stroke-dashoffset 0.5s ease,
                            opacity 0.3s"/>
                 </svg>
-                <svg id="timer-dot-svg" width="320" height="320"
-                  viewBox="0 0 320 320"
+                <svg id="timer-dot-svg" width="400" height="400"
+                  viewBox="0 0 400 400"
                   style="position:absolute;top:0;left:0;pointer-events:none">
-                  <circle id="timer-ring-dot" cx="160" cy="8" r="6"
+                  <circle id="timer-ring-dot" cx="200" cy="10" r="6"
                     style="opacity:0;transition:opacity 0.3s;
                            filter:drop-shadow(0 0 4px rgba(248,113,113,0.8))"/>
                 </svg>
@@ -271,6 +271,11 @@
           <div class="card" style="padding:16px 20px" id="hoje-card">
             <div class="card-label" style="margin-bottom:12px">Hoje</div>
             <div id="hoje-content"></div>
+          </div>
+
+          <div class="card" style="padding:16px 20px" id="foco-agora-card">
+            <div class="card-label" style="margin-bottom:8px">Foco agora</div>
+            <div id="dash-priorities"></div>
           </div>
 
         </div>
