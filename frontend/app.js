@@ -378,20 +378,31 @@ function updateTimerDisplay() {
 
 function updateTimerRing() {
   const ring = document.getElementById('timer-ring-fill')
+  const idle = document.getElementById('timer-ring-idle')
   if (!ring) return
+
+  const circ = 2 * Math.PI * 115
+
   if (!timerRunning && timerSeconds === 0) {
     ring.style.opacity = '0'
-    ring.setAttribute('stroke-dashoffset', '597')
+    ring.setAttribute('stroke-dashoffset', String(circ))
+    if (idle) idle.style.opacity = '0.12'
     return
   }
-  const circ = 2 * Math.PI * 95
-  const total = pomoActive && pomoFocusSecs > 0 ? pomoFocusSecs : Math.max(timerSeconds, 1)
-  const elapsed = pomoActive && pomoSecondsLeft > 0 ? pomoFocusSecs - pomoSecondsLeft : timerSeconds
+
+  const total = pomoActive && pomoFocusSecs > 0
+    ? pomoFocusSecs
+    : Math.max(timerSeconds, 1)
+  const elapsed = pomoActive && pomoSecondsLeft > 0
+    ? pomoFocusSecs - pomoSecondsLeft
+    : timerSeconds
   const pct = Math.min(1, elapsed / total)
+
   ring.setAttribute('stroke-dasharray', String(circ))
   ring.setAttribute('stroke-dashoffset', String(circ * (1 - pct)))
   ring.style.opacity = '1'
   ring.style.stroke = timerRunning ? 'var(--accent)' : 'var(--orange)'
+  if (idle) idle.style.opacity = '0'
 }
 
 function updatePauseDisplay() {
