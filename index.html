@@ -89,34 +89,31 @@
 
         <div class="dash-left">
           <div class="card timer-card" id="timer-card">
-            <!-- Topo: matéria atual -->
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-              <div class="subject-label">Estudando agora</div>
-              <div id="pomo-badge" style="display:none;font-size:9px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:20px;background:var(--accent);color:#000">● POMODORO</div>
-            </div>
-            <div class="subject-name" id="current-subject-name">—</div>
-            <div class="cycle-indicator" id="cycle-indicator"></div>
-
             <!-- Timer central com anel -->
             <div style="display:flex;align-items:center;justify-content:center;
-                        padding:8px 0 16px">
+                        padding:16px 0 8px">
               <div style="position:relative;width:260px;height:260px;
                           display:flex;align-items:center;justify-content:center">
                 <svg width="260" height="260" viewBox="0 0 260 260"
                   style="position:absolute;top:0;left:0;pointer-events:none">
-                  <!-- Anel decorativo sempre visível -->
                   <circle id="timer-ring-idle" cx="130" cy="130" r="115"
                     fill="none" stroke="var(--accent)"
-                    stroke-width="2" opacity="0.12"/>
-                  <!-- Anel de progresso -->
+                    stroke-width="1.5" opacity="0.12"/>
                   <circle id="timer-ring-fill" cx="130" cy="130" r="115"
                     fill="none" stroke="var(--accent)"
-                    stroke-width="5" stroke-linecap="round"
+                    stroke-width="3" stroke-linecap="round"
                     stroke-dasharray="723" stroke-dashoffset="723"
                     transform="rotate(-90 130 130)"
-                    style="opacity:0"/>
+                    style="opacity:0;transition:stroke-dashoffset 0.5s ease,opacity 0.3s"/>
                 </svg>
                 <div style="text-align:center;position:relative;z-index:1">
+                  <div id="pomo-badge"
+                    style="display:none;font-size:9px;font-family:monospace;
+                           font-weight:700;letter-spacing:1px;padding:3px 10px;
+                           border-radius:20px;background:var(--accent);color:#000;
+                           margin-bottom:8px;display:inline-block">
+                    ● POMODORO
+                  </div>
                   <div id="timer-display"
                     style="font-size:76px;font-weight:700;letter-spacing:-4px;
                            line-height:1;color:var(--text);font-family:var(--sans);
@@ -135,8 +132,17 @@
               </div>
             </div>
 
+            <!-- Nome da matéria abaixo do anel -->
+            <div style="text-align:center;padding-bottom:8px">
+              <div class="subject-label" style="margin-bottom:6px">Estudando agora</div>
+              <div class="subject-name" id="current-subject-name"
+                style="font-size:22px;text-align:center">—</div>
+              <div class="cycle-indicator" id="cycle-indicator"
+                style="justify-content:center;margin-top:8px"></div>
+            </div>
+
             <!-- Meta diária -->
-            <div class="goal-section" id="goal-section" style="margin-bottom:4px">
+            <div class="goal-section" id="goal-section">
               <div class="goal-bar-meta">
                 <span id="goal-text"></span>
                 <span id="goal-pct"></span>
@@ -147,31 +153,27 @@
             <!-- Botões -->
             <div style="display:flex;flex-direction:column;gap:8px">
               <button id="btn-start" onclick="startTimer()"
-                style="width:100%;padding:14px;font-size:14px;font-weight:700;letter-spacing:1px;
-                       border-radius:10px;background:var(--accent);color:#000;border:none;cursor:pointer;
-                       transition:opacity 0.2s">
+                style="width:100%;padding:14px;font-size:14px;font-weight:700;
+                       letter-spacing:1px;border-radius:10px;background:var(--accent);
+                       color:#000;border:none;cursor:pointer;transition:opacity 0.2s">
                 ▶ INICIAR SESSÃO
               </button>
               <div style="display:flex;gap:8px">
                 <button id="btn-pause" onclick="pauseTimer()" disabled
-                  style="flex:1;padding:10px;font-size:13px;border-radius:8px;
+                  style="flex:1;padding:10px;font-size:12px;border-radius:8px;
                          background:none;border:1px solid var(--surface3);
                          color:var(--text-muted);cursor:pointer;letter-spacing:1px;
-                         font-family:monospace">
-                  PAUSAR
-                </button>
+                         font-family:monospace">PAUSAR</button>
                 <button id="btn-finish" onclick="finishSession()" disabled
-                  style="flex:1;padding:10px;font-size:13px;border-radius:8px;
+                  style="flex:1;padding:10px;font-size:12px;border-radius:8px;
                          background:none;border:1px solid var(--red);
                          color:var(--red);cursor:pointer;letter-spacing:1px;
-                         font-family:monospace">
-                  FINALIZAR
-                </button>
+                         font-family:monospace">FINALIZAR</button>
               </div>
             </div>
 
             <!-- Pomodoro colapsável -->
-            <div style="border-top:1px solid var(--surface3);padding-top:12px;margin-top:4px">
+            <div style="border-top:1px solid var(--surface3);padding-top:12px">
               <div style="display:flex;align-items:center;justify-content:space-between">
                 <span style="font-size:10px;font-family:monospace;color:var(--text-dim);
                              letter-spacing:1px">MODO POMODORO</span>
@@ -181,8 +183,10 @@
                 </label>
               </div>
               <div id="pomo-config" style="display:none;margin-top:10px">
-                <div class="pomo-field"><label>Foco (min)</label><input type="number" id="pomo-focus" value="25" min="1" max="120"></div>
-                <div class="pomo-field"><label>Pausa (min)</label><input type="number" id="pomo-break" value="5" min="1" max="60"></div>
+                <div class="pomo-field"><label>Foco (min)</label>
+                  <input type="number" id="pomo-focus" value="25" min="1" max="120"></div>
+                <div class="pomo-field"><label>Pausa (min)</label>
+                  <input type="number" id="pomo-break" value="5" min="1" max="60"></div>
                 <span id="pomo-phase-badge" class="pomo-phase-badge pomo-phase-focus">Foco</span>
               </div>
               <div class="pomo-block-bar" id="pomo-block-bar" style="margin-top:8px">
