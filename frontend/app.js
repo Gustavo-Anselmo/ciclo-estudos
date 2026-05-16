@@ -1583,8 +1583,19 @@ function toggleTaskForm() {
   f.style.display = open ? 'none' : 'block'
   if (!open) {
     const sel = document.getElementById('task-subject-select')
-    if (sel) sel.innerHTML = '<option value="">Selecionar matéria...</option>' +
-      state.subjects.map(s => `<option value="${sName(s).replace(/"/g,'&quot;')}">${sName(s)}</option>`).join('')
+    if (sel) {
+      const ciclo = state.subjects.map(s =>
+        `<option value="${sName(s).replace(/"/g,'&quot;')}">${sName(s)}</option>`).join('')
+      const constantes = (state.constantSubjects || []).map(s =>
+        `<option value="${s.replace(/"/g,'&quot;')}">${s}</option>`).join('')
+      const faculdade = (state.facultySubjects || []).map(s =>
+        `<option value="${s.name.replace(/"/g,'&quot;')}">${s.name}</option>`).join('')
+      sel.innerHTML =
+        '<option value="">Sem matéria vinculada</option>' +
+        (ciclo      ? `<optgroup label="Ciclo">${ciclo}</optgroup>` : '') +
+        (constantes ? `<optgroup label="Constantes">${constantes}</optgroup>` : '') +
+        (faculdade  ? `<optgroup label="Faculdade">${faculdade}</optgroup>` : '')
+    }
   }
 }
 
@@ -1593,7 +1604,7 @@ async function createTask() {
   const subjectName = document.getElementById('task-subject-select')?.value || ''
   const raw = document.getElementById('task-topics-textarea')?.value || ''
   const topics = raw.split('\n').map(t => t.trim()).filter(Boolean)
-  if (!title || !subjectName) { showToast('Preencha título e matéria'); return }
+  if (!title) { showToast('Preencha o título da tarefa'); return }
   try {
     const res = await fetch(`${API_URL}/api/tasks`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1671,9 +1682,12 @@ function startTask(taskId, subjectName) {
   const task = planningTasks.find(t => t.id === taskId)
   if (!task) return
   activeTask = task
-  const idx = state.subjects.findIndex(s => sName(s) === subjectName)
-  if (idx >= 0) { studyingConstant = null; state.currentIndex = idx }
-  else studyingConstant = subjectName
+  if (subjectName) {
+    const idx = state.subjects.findIndex(s =>
+      sName(s).toLowerCase().trim() === subjectName.toLowerCase().trim())
+    if (idx >= 0) { studyingConstant = null; state.currentIndex = idx }
+  }
+  save()
   showView('dashboard')
 }
 
@@ -1813,8 +1827,17 @@ function renderPlanning() {
   const SB = 'padding:6px 12px;font-size:11px;border-radius:6px;border:1px solid var(--surface4);background:var(--surface3);color:var(--text-muted);cursor:pointer'
   const IS = 'width:100%;background:var(--surface2);border:1px solid var(--surface4);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;font-family:var(--sans);outline:none;margin-bottom:8px'
 
-  const subjectOptions = '<option value="">Selecionar matéria...</option>' +
-    state.subjects.map(s => `<option value="${sName(s).replace(/"/g,'&quot;')}">${sName(s)}</option>`).join('')
+  const _ciclo = state.subjects.map(s =>
+    `<option value="${sName(s).replace(/"/g,'&quot;')}">${sName(s)}</option>`).join('')
+  const _constantes = (state.constantSubjects || []).map(s =>
+    `<option value="${s.replace(/"/g,'&quot;')}">${s}</option>`).join('')
+  const _faculdade = (state.facultySubjects || []).map(s =>
+    `<option value="${s.name.replace(/"/g,'&quot;')}">${s.name}</option>`).join('')
+  const subjectOptions =
+    '<option value="">Sem matéria vinculada</option>' +
+    (_ciclo      ? `<optgroup label="Ciclo">${_ciclo}</optgroup>` : '') +
+    (_constantes ? `<optgroup label="Constantes">${_constantes}</optgroup>` : '') +
+    (_faculdade  ? `<optgroup label="Faculdade">${_faculdade}</optgroup>` : '')
 
   const prioritiesInner = !planningPriorities.length
     ? `<div style="color:var(--text-dim);text-align:center;font-size:12px;padding:16px 0">Clique em "Atualizar prioridades" para ver suas prioridades</div>`
