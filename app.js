@@ -647,14 +647,6 @@ function renderConstantManage() {
 }
 
 // ── FACULTY SUBJECTS ──
-function toggleFacultyForm() {
-  const f = document.getElementById('faculty-form')
-  if (!f) return
-  const open = f.style.display !== 'none'
-  f.style.display = open ? 'none' : 'block'
-  if (!open) document.getElementById('faculty-name')?.focus()
-}
-
 function addFacultySubject() {
   const name = (document.getElementById('faculty-name')?.value || '').trim()
   if (!name) { showToast('Preencha o nome da matéria'); return }
@@ -665,7 +657,6 @@ function addFacultySubject() {
   state.facultySubjects.push({ name })
   save()
   document.getElementById('faculty-name').value = ''
-  toggleFacultyForm()
   renderFacultySubjects()
 }
 
