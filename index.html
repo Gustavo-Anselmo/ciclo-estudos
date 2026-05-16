@@ -110,19 +110,13 @@
                           display:flex;align-items:center;justify-content:center">
                 <svg width="320" height="320" viewBox="0 0 320 320"
                   style="position:absolute;top:0;left:0;pointer-events:none">
-                  <defs>
-                    <linearGradient id="ring-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stop-color="#f87171"/>
-                      <stop offset="100%" stop-color="#fb923c"/>
-                    </linearGradient>
-                  </defs>
                   <!-- Anel de fundo -->
                   <circle cx="160" cy="160" r="140" fill="none"
-                    stroke="color-mix(in srgb,var(--accent) 10%,transparent)"
+                    stroke="rgba(248,113,113,0.15)"
                     stroke-width="4"/>
                   <!-- Anel de progresso -->
                   <circle id="timer-ring-fill" cx="160" cy="160" r="140"
-                    fill="none" stroke="url(#ring-gradient)"
+                    fill="none" stroke="#f87171"
                     stroke-width="4" stroke-linecap="round"
                     stroke-dasharray="879" stroke-dashoffset="879"
                     transform="rotate(-90 160 160)"
