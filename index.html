@@ -98,32 +98,38 @@
             <div class="cycle-indicator" id="cycle-indicator"></div>
 
             <!-- Timer central com anel -->
-            <div style="position:relative;display:flex;align-items:center;justify-content:center;padding:32px 0 20px">
-              <svg style="position:absolute;top:0;left:50%;transform:translateX(-50%);pointer-events:none"
-                width="220" height="220" viewBox="0 0 220 220">
-                <circle cx="110" cy="110" r="95" fill="none"
-                  stroke="var(--surface3)" stroke-width="3"/>
-                <circle cx="110" cy="110" r="95" fill="none"
-                  stroke="var(--accent)" stroke-width="4"
-                  stroke-linecap="round"
-                  stroke-dasharray="597" stroke-dashoffset="597"
-                  transform="rotate(-90 110 110)"
-                  id="timer-ring-fill"
-                  style="transition:stroke-dasharray 0.5s ease,opacity 0.3s;opacity:0"/>
-              </svg>
-              <div style="text-align:center;position:relative;z-index:1">
-                <div id="timer-display"
-                  style="font-size:72px;font-weight:700;letter-spacing:-3px;line-height:1;
-                         color:var(--text);font-family:var(--sans);transition:color 0.3s">
-                  00:00
+            <div style="display:flex;align-items:center;justify-content:center;
+                        padding:8px 0 16px">
+              <div style="position:relative;width:220px;height:220px;
+                          display:flex;align-items:center;justify-content:center">
+                <svg width="220" height="220" viewBox="0 0 220 220"
+                  style="position:absolute;top:0;left:0;pointer-events:none">
+                  <circle cx="110" cy="110" r="95" fill="none"
+                    stroke="var(--surface3)" stroke-width="3"/>
+                  <circle cx="110" cy="110" r="95" fill="none"
+                    stroke="var(--accent)" stroke-width="4"
+                    stroke-linecap="round"
+                    stroke-dasharray="597" stroke-dashoffset="597"
+                    transform="rotate(-90 110 110)"
+                    id="timer-ring-fill"
+                    style="transition:stroke-dashoffset 0.5s ease,opacity 0.3s;opacity:0"/>
+                </svg>
+                <div style="text-align:center;position:relative;z-index:1">
+                  <div id="timer-display"
+                    style="font-size:64px;font-weight:700;letter-spacing:-3px;
+                           line-height:1;color:var(--text);font-family:var(--sans);
+                           transition:color 0.3s">
+                    00:00
+                  </div>
+                  <div id="timer-status"
+                    style="font-size:10px;font-family:monospace;letter-spacing:2px;
+                           color:var(--text-dim);margin-top:8px;text-transform:uppercase">
+                    parado
+                  </div>
+                  <div id="pause-display"
+                    style="font-size:11px;color:var(--text-dim);margin-top:4px;
+                           min-height:16px"></div>
                 </div>
-                <div id="timer-status"
-                  style="font-size:10px;font-family:monospace;letter-spacing:2px;
-                         color:var(--text-dim);margin-top:10px;text-transform:uppercase">
-                  parado
-                </div>
-                <div id="pause-display"
-                  style="font-size:11px;color:var(--text-dim);margin-top:4px;min-height:16px"></div>
               </div>
             </div>
 
