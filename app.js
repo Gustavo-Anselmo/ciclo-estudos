@@ -466,6 +466,73 @@ function renderDashStats() {
   ].join('')
 }
 
+function renderFocusToday() {
+  const el = document.getElementById('focus-today-content')
+  if (!el) return
+
+  const todayStr  = new Date().toDateString()
+  const todaySecs = state.sessions
+    .filter(s => new Date(s.end).toDateString() === todayStr)
+    .reduce((a, s) => a + s.duration, 0) + (timerRunning ? timerSeconds : 0)
+
+  const totalGoalSecs = state.subjects
+    .reduce((a, s) => a + (sGoal(s) * 60), 0)
+
+  if (!totalGoalSecs) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--text-dim)">
+      Defina metas diárias nas matérias para ver seu progresso.</div>`
+    return
+  }
+
+  const pct  = Math.min(100, Math.round(todaySecs / totalGoalSecs * 100))
+  const done = todaySecs >= totalGoalSecs
+  const color = done ? 'var(--green)' : pct >= 60 ? 'var(--accent)' : pct >= 30 ? 'var(--orange)' : 'var(--red)'
+
+  const r = 28, circ = 2 * Math.PI * r
+  const dash = (pct / 100) * circ
+
+  const fmtSecs = secs => {
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60)
+    if (h > 0) return m > 0 ? `${h}h ${m}min` : `${h}h`
+    return m > 0 ? `${m}min` : secs > 0 ? `${secs}s` : '0min'
+  }
+
+  const msg = done
+    ? 'Meta diária atingida! 🎉'
+    : pct >= 60 ? 'Bom progresso, continue!'
+    : pct >= 30 ? 'Você está no caminho certo.'
+    : 'Pequeno progresso todos os dias gera grandes resultados.'
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+      <svg width="72" height="72" style="flex-shrink:0">
+        <circle cx="36" cy="36" r="${r}" fill="none"
+          stroke="var(--surface3)" stroke-width="5"/>
+        <circle cx="36" cy="36" r="${r}" fill="none"
+          stroke="${color}" stroke-width="5"
+          stroke-dasharray="${dash} ${circ}"
+          stroke-dashoffset="${circ / 4}"
+          stroke-linecap="round"
+          style="transition:stroke-dasharray .6s ease"/>
+        <text x="36" y="40" text-anchor="middle"
+          style="font-size:13px;font-weight:700;fill:${color};font-family:var(--sans)">
+          ${pct}%
+        </text>
+      </svg>
+      <div>
+        <div style="font-size:20px;font-weight:700;color:${color};line-height:1">
+          ${fmtSecs(todaySecs)}
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:4px">
+          / ${fmtSecs(totalGoalSecs)} meta diária
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);font-style:italic">${msg}</div>
+  `
+}
+
 function renderDashPriorities() {
   let el = document.getElementById('dash-priorities')
   if (!el) {
@@ -529,7 +596,7 @@ function renderDashboard() {
     nextList.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:4px 0">—</div>';
     cycleEl.innerHTML = '';
     if (todayList) todayList.innerHTML = '<div style="font-size:12px;color:var(--text-dim)">Nenhuma sessão hoje</div>';
-    renderConstantDashboard(); renderFacultyDashboard(); renderGoalProgress(); renderDashStats(); renderDashPriorities();
+    renderConstantDashboard(); renderFacultyDashboard(); renderGoalProgress(); renderDashStats(); renderFocusToday(); renderDashPriorities();
     return;
   }
 
@@ -587,7 +654,7 @@ function renderDashboard() {
         `<div style="font-size:12px;color:var(--text-muted);padding:3px 0">${name} — ${formatShort(time)}</div>`
       ).join('');
 
-  renderConstantDashboard(); renderFacultyDashboard(); renderGoalProgress(); renderDashStats(); renderDashPriorities();
+  renderConstantDashboard(); renderFacultyDashboard(); renderGoalProgress(); renderDashStats(); renderFocusToday(); renderDashPriorities();
   const dashView = document.getElementById('view-dashboard')
   if (dashView && !dashView.querySelector('.view-spacer')) dashView.insertAdjacentHTML('beforeend', '<div class="view-spacer" style="height:80px"></div>')
 }
