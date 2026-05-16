@@ -75,7 +75,7 @@ body {
 .sidebar-logo {
   width: 100%;
   padding: 20px 16px;
-  border-bottom: 1px solid var(--surface3);
+  /* border-bottom: 1px solid var(--surface3); */
   margin-bottom: 8px;
   flex-shrink: 0;
 }
