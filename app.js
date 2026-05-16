@@ -180,6 +180,8 @@ function onPomoToggle() {
     document.getElementById('pomo-block-bar').style.display = 'none';
     if (!timerRunning && timerSeconds === 0) { pomoPhase = 'focus'; pomoSecondsLeft = 0; pomoFocusSecs = 0; }
   }
+  const badge = document.getElementById('pomo-badge')
+  if (badge) badge.style.display = pomoActive ? 'block' : 'none'
 }
 function getPomoFocusSecs() { return (parseInt(document.getElementById('pomo-focus')?.value) || 25) * 60; }
 function getPomoBreakSecs() { return (parseInt(document.getElementById('pomo-break')?.value) || 5) * 60; }
@@ -359,10 +361,14 @@ function finishSession() {
 }
 
 function updateTimerDisplay() {
-  const val = (pomoActive && pomoPhase === 'focus' && pomoSecondsLeft > 0)
-    ? formatTime(pomoSecondsLeft)
-    : formatTime(timerSeconds);
-  document.getElementById('timer-display').textContent = val;
+  const secs = (pomoActive && pomoPhase === 'focus' && pomoSecondsLeft > 0)
+    ? pomoSecondsLeft : timerSeconds
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
+  const s = secs % 60
+  const pad = n => String(n).padStart(2, '0')
+  document.getElementById('timer-display').textContent =
+    h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
 }
 
 function updatePauseDisplay() {
