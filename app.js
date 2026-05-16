@@ -404,6 +404,16 @@ function updateTimerRing() {
   const r    = 190
   const circ = 2 * Math.PI * r
 
+  // Atualiza cor do gradiente e do dot sempre (independente do estado do timer)
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
+  const grad0 = document.getElementById('timer-grad-0')
+  const grad1 = document.getElementById('timer-grad-1')
+  const track = document.getElementById('timer-ring-track')
+  if (grad0) grad0.setAttribute('stop-color', accent)
+  if (grad1) grad1.setAttribute('stop-color', accent)
+  if (dot)   dot.style.fill = accent
+  if (track) track.setAttribute('stroke', accent.trim() ? `color-mix(in srgb, ${accent} 10%, transparent)` : 'rgba(255,255,255,0.08)')
+
   if (!timerRunning && timerSeconds === 0) {
     ring.style.opacity = '0'
     if (dot) dot.style.opacity = '0'
@@ -416,13 +426,6 @@ function updateTimerRing() {
   const pct = timerRunning || timerSeconds > 0
     ? Math.min(1, timerSeconds / FULL_CYCLE_SECS)
     : 0
-
-  const grad0 = document.getElementById('timer-grad-0')
-  const grad1 = document.getElementById('timer-grad-1')
-  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
-  if (grad0) grad0.setAttribute('stop-color', accent)
-  if (grad1) grad1.setAttribute('stop-color', accent)
-  if (dot)   dot.style.fill = accent
 
   ring.setAttribute('stroke-dasharray', String(circ))
   ring.setAttribute('stroke-dashoffset', String(circ * (1 - pct)))
@@ -1724,6 +1727,7 @@ function applyAccent(color) {
   localStorage.setItem('ciclo-accent-color', color)
   const picker = document.getElementById('theme-color-input')
   if (picker) picker.value = color
+  updateTimerRing()
 }
 
 function toggleThemePopover(e) {
