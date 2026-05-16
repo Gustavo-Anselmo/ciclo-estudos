@@ -175,13 +175,14 @@ function updateSidebarDot() {
 // ── POMODORO ──
 function onPomoToggle() {
   pomoActive = document.getElementById('pomo-toggle').checked;
-  document.getElementById('pomo-config').classList.toggle('visible', pomoActive);
   if (!pomoActive) {
     document.getElementById('pomo-block-bar').style.display = 'none';
     if (!timerRunning && timerSeconds === 0) { pomoPhase = 'focus'; pomoSecondsLeft = 0; pomoFocusSecs = 0; }
   }
   const badge = document.getElementById('pomo-badge')
-  if (badge) badge.style.display = pomoActive ? 'block' : 'none'
+  if (badge) badge.style.display = pomoActive ? 'inline-block' : 'none'
+  const cfg = document.getElementById('pomo-config')
+  if (cfg) cfg.style.display = pomoActive ? 'block' : 'none'
 }
 function getPomoFocusSecs() { return (parseInt(document.getElementById('pomo-focus')?.value) || 25) * 60; }
 function getPomoBreakSecs() { return (parseInt(document.getElementById('pomo-break')?.value) || 5) * 60; }
@@ -367,36 +368,30 @@ function updateTimerDisplay() {
   const m = Math.floor((secs % 3600) / 60)
   const s = secs % 60
   const pad = n => String(n).padStart(2, '0')
-  document.getElementById('timer-display').textContent =
-    h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
+  const el = document.getElementById('timer-display')
+  if (el) {
+    el.textContent = h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
+    el.style.color = timerRunning ? 'var(--accent)' : timerSeconds > 0 ? 'var(--orange)' : 'var(--text)'
+  }
   updateTimerRing()
 }
 
 function updateTimerRing() {
   const ring = document.getElementById('timer-ring-fill')
-  const svg  = document.getElementById('timer-ring-svg')
-  if (!ring || !svg) return
-
+  if (!ring) return
   if (!timerRunning && timerSeconds === 0) {
-    svg.style.opacity = '0.1'
-    ring.setAttribute('stroke-dashoffset', '565')
+    ring.style.opacity = '0'
+    ring.setAttribute('stroke-dashoffset', '597')
     return
   }
-
-  const total = pomoActive && pomoFocusSecs > 0
-    ? pomoFocusSecs
-    : Math.max(timerSeconds, 1)
-  const elapsed = pomoActive && pomoSecondsLeft > 0
-    ? pomoFocusSecs - pomoSecondsLeft
-    : timerSeconds
-
-  const pct  = Math.min(1, elapsed / total)
-  const circ = 2 * Math.PI * 90
-  const offset = circ * (1 - pct)
-
+  const circ = 2 * Math.PI * 95
+  const total = pomoActive && pomoFocusSecs > 0 ? pomoFocusSecs : Math.max(timerSeconds, 1)
+  const elapsed = pomoActive && pomoSecondsLeft > 0 ? pomoFocusSecs - pomoSecondsLeft : timerSeconds
+  const pct = Math.min(1, elapsed / total)
   ring.setAttribute('stroke-dasharray', String(circ))
-  ring.setAttribute('stroke-dashoffset', String(offset))
-  svg.style.opacity = timerRunning ? '1' : '0.4'
+  ring.setAttribute('stroke-dashoffset', String(circ * (1 - pct)))
+  ring.style.opacity = '1'
+  ring.style.stroke = timerRunning ? 'var(--accent)' : 'var(--orange)'
 }
 
 function updatePauseDisplay() {

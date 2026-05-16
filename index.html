@@ -91,42 +91,44 @@
           <div class="card timer-card" id="timer-card">
             <!-- Topo: matéria atual -->
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-              <div class="subject-label" id="studying-label">Estudando agora</div>
+              <div class="subject-label">Estudando agora</div>
               <div id="pomo-badge" style="display:none;font-size:9px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:20px;background:var(--accent);color:#000">● POMODORO</div>
             </div>
             <div class="subject-name" id="current-subject-name">—</div>
             <div class="cycle-indicator" id="cycle-indicator"></div>
 
-            <!-- Timer central -->
-            <div style="text-align:center;padding:24px 0 16px;position:relative">
-              <svg id="timer-ring-svg" width="200" height="200"
-                style="position:absolute;top:50%;left:50%;transform:translate(-50%,-54%);
-                       pointer-events:none;opacity:0.15">
-                <circle cx="100" cy="100" r="90" fill="none"
-                  stroke="var(--accent)" stroke-width="3"
-                  stroke-dasharray="565" stroke-dashoffset="565"
+            <!-- Timer central com anel -->
+            <div style="position:relative;display:flex;align-items:center;justify-content:center;padding:32px 0 20px">
+              <svg style="position:absolute;top:0;left:50%;transform:translateX(-50%);pointer-events:none"
+                width="220" height="220" viewBox="0 0 220 220">
+                <circle cx="110" cy="110" r="95" fill="none"
+                  stroke="var(--surface3)" stroke-width="3"/>
+                <circle cx="110" cy="110" r="95" fill="none"
+                  stroke="var(--accent)" stroke-width="4"
                   stroke-linecap="round"
-                  transform="rotate(-90 100 100)"
-                  id="timer-ring-fill"/>
-                <circle cx="100" cy="100" r="90" fill="none"
-                  stroke="var(--surface3)" stroke-width="2"/>
+                  stroke-dasharray="597" stroke-dashoffset="597"
+                  transform="rotate(-90 110 110)"
+                  id="timer-ring-fill"
+                  style="transition:stroke-dasharray 0.5s ease,opacity 0.3s;opacity:0"/>
               </svg>
-              <div class="timer-time" id="timer-display"
-                style="font-size:clamp(56px,8vw,80px);font-weight:700;
-                       letter-spacing:-3px;line-height:1;font-family:var(--sans)">
-                00:00
+              <div style="text-align:center;position:relative;z-index:1">
+                <div id="timer-display"
+                  style="font-size:72px;font-weight:700;letter-spacing:-3px;line-height:1;
+                         color:var(--text);font-family:var(--sans);transition:color 0.3s">
+                  00:00
+                </div>
+                <div id="timer-status"
+                  style="font-size:10px;font-family:monospace;letter-spacing:2px;
+                         color:var(--text-dim);margin-top:10px;text-transform:uppercase">
+                  parado
+                </div>
+                <div id="pause-display"
+                  style="font-size:11px;color:var(--text-dim);margin-top:4px;min-height:16px"></div>
               </div>
-              <div class="timer-status" id="timer-status"
-                style="font-size:10px;font-family:monospace;letter-spacing:2px;
-                       color:var(--text-dim);margin-top:8px;text-transform:uppercase">
-                parado
-              </div>
-              <div class="pause-time" id="pause-display"
-                style="font-size:11px;color:var(--text-dim);margin-top:4px"></div>
             </div>
 
             <!-- Meta diária -->
-            <div class="goal-section" id="goal-section" style="margin-bottom:20px">
+            <div class="goal-section" id="goal-section" style="margin-bottom:4px">
               <div class="goal-bar-meta">
                 <span id="goal-text"></span>
                 <span id="goal-pct"></span>
@@ -136,35 +138,47 @@
 
             <!-- Botões -->
             <div style="display:flex;flex-direction:column;gap:8px">
-              <button class="btn btn-primary" id="btn-start" onclick="startTimer()"
-                style="width:100%;padding:14px;font-size:14px;font-weight:700;letter-spacing:1px;border-radius:10px">
-                ▶ Iniciar sessão
+              <button id="btn-start" onclick="startTimer()"
+                style="width:100%;padding:14px;font-size:14px;font-weight:700;letter-spacing:1px;
+                       border-radius:10px;background:var(--accent);color:#000;border:none;cursor:pointer;
+                       transition:opacity 0.2s">
+                ▶ INICIAR SESSÃO
               </button>
               <div style="display:flex;gap:8px">
-                <button class="btn" id="btn-pause" onclick="pauseTimer()" disabled
-                  style="flex:1;padding:10px;font-size:13px">Pausar</button>
-                <button class="btn btn-danger" id="btn-finish" onclick="finishSession()" disabled
-                  style="flex:1;padding:10px;font-size:13px">Finalizar</button>
+                <button id="btn-pause" onclick="pauseTimer()" disabled
+                  style="flex:1;padding:10px;font-size:13px;border-radius:8px;
+                         background:none;border:1px solid var(--surface3);
+                         color:var(--text-muted);cursor:pointer;letter-spacing:1px;
+                         font-family:monospace">
+                  PAUSAR
+                </button>
+                <button id="btn-finish" onclick="finishSession()" disabled
+                  style="flex:1;padding:10px;font-size:13px;border-radius:8px;
+                         background:none;border:1px solid var(--red);
+                         color:var(--red);cursor:pointer;letter-spacing:1px;
+                         font-family:monospace">
+                  FINALIZAR
+                </button>
               </div>
             </div>
 
             <!-- Pomodoro colapsável -->
-            <div style="margin-top:16px;border-top:1px solid var(--surface3);padding-top:12px">
-              <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"
-                onclick="document.getElementById('pomo-body').style.display=document.getElementById('pomo-body').style.display==='none'?'block':'none'">
-                <span style="font-size:11px;font-family:monospace;color:var(--text-muted);letter-spacing:1px">MODO POMODORO</span>
-                <label class="toggle-switch" onclick="event.stopPropagation()">
+            <div style="border-top:1px solid var(--surface3);padding-top:12px;margin-top:4px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span style="font-size:10px;font-family:monospace;color:var(--text-dim);
+                             letter-spacing:1px">MODO POMODORO</span>
+                <label class="toggle-switch">
                   <input type="checkbox" id="pomo-toggle" onchange="onPomoToggle()">
                   <span class="toggle-knob"></span>
                 </label>
               </div>
-              <div id="pomo-body" style="display:none;margin-top:10px">
-                <div class="pomo-config" id="pomo-config">
-                  <div class="pomo-field"><label>Foco (min)</label><input type="number" id="pomo-focus" value="25" min="1" max="120"></div>
-                  <div class="pomo-field"><label>Pausa (min)</label><input type="number" id="pomo-break" value="5" min="1" max="60"></div>
-                  <span id="pomo-phase-badge" class="pomo-phase-badge pomo-phase-focus">Foco</span>
-                </div>
-                <div class="pomo-block-bar" id="pomo-block-bar"><div class="pomo-block-bar-fill" id="pomo-bar-fill"></div></div>
+              <div id="pomo-config" style="display:none;margin-top:10px">
+                <div class="pomo-field"><label>Foco (min)</label><input type="number" id="pomo-focus" value="25" min="1" max="120"></div>
+                <div class="pomo-field"><label>Pausa (min)</label><input type="number" id="pomo-break" value="5" min="1" max="60"></div>
+                <span id="pomo-phase-badge" class="pomo-phase-badge pomo-phase-focus">Foco</span>
+              </div>
+              <div class="pomo-block-bar" id="pomo-block-bar" style="margin-top:8px">
+                <div class="pomo-block-bar-fill" id="pomo-bar-fill"></div>
               </div>
             </div>
           </div>
