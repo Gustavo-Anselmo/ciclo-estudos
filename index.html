@@ -98,10 +98,31 @@
             <div class="cycle-indicator" id="cycle-indicator"></div>
 
             <!-- Timer central -->
-            <div style="text-align:center;padding:32px 0 20px">
-              <div class="timer-time" id="timer-display" style="font-size:clamp(56px,8vw,80px);font-weight:700;letter-spacing:-2px;line-height:1">00:00</div>
-              <div class="timer-status" id="timer-status" style="font-size:11px;font-family:monospace;letter-spacing:2px;color:var(--text-dim);margin-top:8px;text-transform:uppercase">parado</div>
-              <div class="pause-time" id="pause-display" style="font-size:11px;color:var(--text-dim);margin-top:4px"></div>
+            <div style="text-align:center;padding:24px 0 16px;position:relative">
+              <svg id="timer-ring-svg" width="200" height="200"
+                style="position:absolute;top:50%;left:50%;transform:translate(-50%,-54%);
+                       pointer-events:none;opacity:0.15">
+                <circle cx="100" cy="100" r="90" fill="none"
+                  stroke="var(--accent)" stroke-width="3"
+                  stroke-dasharray="565" stroke-dashoffset="565"
+                  stroke-linecap="round"
+                  transform="rotate(-90 100 100)"
+                  id="timer-ring-fill"/>
+                <circle cx="100" cy="100" r="90" fill="none"
+                  stroke="var(--surface3)" stroke-width="2"/>
+              </svg>
+              <div class="timer-time" id="timer-display"
+                style="font-size:clamp(56px,8vw,80px);font-weight:700;
+                       letter-spacing:-3px;line-height:1;font-family:var(--sans)">
+                00:00
+              </div>
+              <div class="timer-status" id="timer-status"
+                style="font-size:10px;font-family:monospace;letter-spacing:2px;
+                       color:var(--text-dim);margin-top:8px;text-transform:uppercase">
+                parado
+              </div>
+              <div class="pause-time" id="pause-display"
+                style="font-size:11px;color:var(--text-dim);margin-top:4px"></div>
             </div>
 
             <!-- Meta diária -->

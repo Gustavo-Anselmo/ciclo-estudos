@@ -349,7 +349,7 @@ header {
 .goal-bar-fill.done { background: var(--green); }
 
 .timer-display { text-align: center; padding: 12px 0 4px; }
-.timer-time { font-family: var(--mono); font-size: 60px; font-weight: 500; color: var(--text); letter-spacing: -0.03em; line-height: 1; transition: color 0.3s; }
+.timer-time { font-family: var(--sans); font-size: 60px; font-weight: 700; color: var(--text); letter-spacing: -3px; line-height: 1; transition: color 0.3s; }
 .timer-time.running { color: var(--accent); }
 .timer-time.paused  { color: var(--orange); }
 
