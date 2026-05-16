@@ -382,38 +382,34 @@ function updateTimerRing() {
   if (!ring) return
 
   const r    = 152
-  const circ = 2 * Math.PI * r  // 955.04
+  const circ = 2 * Math.PI * r
 
   if (!timerRunning && timerSeconds === 0) {
     ring.style.opacity = '0'
-    ring.setAttribute('stroke-dashoffset', String(circ))
     if (dot) dot.style.opacity = '0'
+    ring.setAttribute('stroke-dashoffset', String(circ))
     return
   }
 
-  let pct = 0
-  if (pomoActive && pomoFocusSecs > 0) {
-    const elapsed = pomoSecondsLeft > 0
-      ? pomoFocusSecs - pomoSecondsLeft
-      : pomoFocusSecs
-    pct = Math.min(1, elapsed / pomoFocusSecs)
-  } else if (timerRunning) {
-    pct = 0.2
-  }
+  // Progresso: 45 minutos = 1 volta completa
+  const FULL_CYCLE_SECS = 45 * 60
+  const pct = timerRunning || timerSeconds > 0
+    ? Math.min(1, timerSeconds / FULL_CYCLE_SECS)
+    : 0
 
   ring.setAttribute('stroke-dasharray', String(circ))
   ring.setAttribute('stroke-dashoffset', String(circ * (1 - pct)))
   ring.style.opacity = '1'
+  ring.removeAttribute('stroke') // deixa o gradiente CSS atuar
 
-  if (dot && pct > 0) {
+  // Dot: posiciona no fim do arco
+  if (dot) {
     const angle = pct * 2 * Math.PI - Math.PI / 2
     const cx = 160 + r * Math.cos(angle)
     const cy = 160 + r * Math.sin(angle)
     dot.setAttribute('cx', String(cx))
     dot.setAttribute('cy', String(cy))
-    dot.style.opacity = '1'
-  } else if (dot) {
-    dot.style.opacity = '0'
+    dot.style.opacity = timerRunning ? '1' : '0.5'
   }
 }
 

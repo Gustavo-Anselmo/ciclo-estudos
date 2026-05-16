@@ -591,7 +591,7 @@ header {
   .body-layout { margin-left: 0; }
 
   /* Stats cards: grid 2x2 */
-  #dash-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  #dash-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
 
   /* Subjects: hide ↑↓ buttons, more padding */
   .move-btns .icon-btn:not(.edit):not(.del) { display: none; }
