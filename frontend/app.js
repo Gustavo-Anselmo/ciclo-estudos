@@ -334,6 +334,7 @@ function finishSession() {
         activeTask.totalTime = newTotal
         const tidx = planningTasks.findIndex(t => t.id === activeTask.id)
         if (tidx !== -1) planningTasks[tidx].totalTime = newTotal
+        activeTask = null
       }
 
       playBeep(); doVibrate([200, 100, 200]);
