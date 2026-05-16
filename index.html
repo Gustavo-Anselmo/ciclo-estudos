@@ -158,20 +158,26 @@
         </div>
 
         <div class="dash-right">
-          <div class="card">
-            <div class="card-label">Próximas</div>
-            <div class="next-list" id="next-list"></div>
+          <div class="card" style="padding:16px 20px">
+            <div class="card-label" style="margin-bottom:12px">Próximas matérias</div>
+            <div id="next-list"></div>
+            <button onclick="showView('subjects')"
+              style="width:100%;margin-top:12px;padding:8px;background:none;border:1px solid var(--surface3);
+                     border-radius:8px;color:var(--text-dim);font-size:11px;cursor:pointer;
+                     font-family:monospace;letter-spacing:1px">
+              VER TODAS AS MATÉRIAS →
+            </button>
           </div>
-          <div class="card const-dash-card" id="const-dash-section" style="display:none">
-            <div class="card-label">Matérias constantes — clique para selecionar</div>
+          <div class="card const-dash-card" id="const-dash-section" style="display:none;padding:16px 20px">
+            <div class="card-label" style="margin-bottom:12px">Matérias constantes</div>
             <div class="const-list" id="const-dash-list"></div>
           </div>
-          <div class="card const-dash-card" id="faculty-dash-section" style="display:none">
-            <div class="card-label">Faculdade — clique para selecionar</div>
+          <div class="card const-dash-card" id="faculty-dash-section" style="display:none;padding:16px 20px">
+            <div class="card-label" style="margin-bottom:12px">Faculdade</div>
             <div class="const-list" id="faculty-dash-list"></div>
           </div>
           <div class="card" style="padding:16px 20px" id="today-card">
-            <div class="card-label">Hoje</div>
+            <div class="card-label" style="margin-bottom:8px">Hoje</div>
             <div id="today-list"></div>
           </div>
         </div>

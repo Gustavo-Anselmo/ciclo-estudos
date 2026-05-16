@@ -434,13 +434,15 @@ function renderDashStats() {
   const el = document.getElementById('dash-stats')
   if (!el) return
 
-  const todayStr = new Date().toDateString()
-  const todaySecs = state.sessions.filter(s => new Date(s.end).toDateString() === todayStr).reduce((acc, s) => acc + s.duration, 0)
-  const weekSecs  = state.sessions.filter(s => new Date(s.end) >= getWeekStart()).reduce((acc, s) => acc + s.duration, 0)
+  const todayStr  = new Date().toDateString()
+  const todaySess = state.sessions.filter(s => new Date(s.end).toDateString() === todayStr)
+  const todaySecs = todaySess.reduce((a, s) => a + s.duration, 0)
+  const weekSess  = state.sessions.filter(s => new Date(s.end) >= getWeekStart())
+  const weekSecs  = weekSess.reduce((a, s) => a + s.duration, 0)
   const streak    = calcStreak()
   const total     = state.sessions.length
 
-  const fmtSecs = (secs) => {
+  const fmtSecs = secs => {
     const h = Math.floor(secs / 3600)
     const m = Math.floor((secs % 3600) / 60)
     if (h > 0) return m > 0 ? `${h}h ${m}min` : `${h}h`
@@ -448,18 +450,19 @@ function renderDashStats() {
     return secs > 0 ? `${secs}s` : '—'
   }
 
-  const card = (label, value, color = 'var(--text)') =>
-    `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:14px 16px;min-height:72px">
+  const card = (label, value, sub = '', color = 'var(--text)') =>
+    `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:14px 16px">
       <div style="font-size:9px;color:var(--text-dim);font-family:monospace;letter-spacing:1px;margin-bottom:6px">${label}</div>
-      <div style="font-size:18px;font-weight:600;color:${color}">${value}</div>
+      <div style="font-size:20px;font-weight:700;color:${color};line-height:1">${value}</div>
+      ${sub ? `<div style="font-size:10px;color:var(--text-dim);margin-top:4px">${sub}</div>` : ''}
     </div>`
 
-  el.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px'
+  el.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px'
   el.innerHTML = [
-    card('TEMPO HOJE',      fmtSecs(todaySecs)),
-    card('ESTA SEMANA',     fmtSecs(weekSecs)),
-    card('SEQUÊNCIA',       streak > 0 ? `${streak} ${streak === 1 ? 'dia' : 'dias'}` : '—', streak > 0 ? 'var(--orange)' : 'var(--text-dim)'),
-    card('SESSÕES',         `${total}`),
+    card('TEMPO HOJE',  fmtSecs(todaySecs), `${todaySess.length} sess${todaySess.length === 1 ? 'ão' : 'ões'}`),
+    card('ESTA SEMANA', fmtSecs(weekSecs),  `${weekSess.length} sessões`),
+    card('SEQUÊNCIA',   streak > 0 ? `${streak}d` : '—', streak > 0 ? `${streak === 1 ? 'dia' : 'dias'} seguidos` : 'sem sequência', streak > 0 ? 'var(--orange)' : 'var(--text-dim)'),
+    card('SESSÕES',     `${total}`, 'total registradas'),
   ].join('')
 }
 
@@ -557,13 +560,18 @@ function renderDashboard() {
   ).join('');
 
   if (state.subjects.length > 0) {
-    const nexts = [];
-    for (let i = 1; i <= 3; i++) nexts.push({ name: sName(state.subjects[(state.currentIndex + i) % state.subjects.length]), offset: i });
-    nextList.innerHTML = nexts.map(n =>
-      `<div class="next-item"><span class="idx">+${n.offset}</span><span class="name">${n.name}</span></div>`
-    ).join('');
+    const nexts = []
+    for (let i = 1; i <= 5; i++)
+      nexts.push({ name: sName(state.subjects[(state.currentIndex + i) % state.subjects.length]), offset: i })
+    nextList.innerHTML = nexts.map(n => {
+      const c = subjectColor(n.name)
+      return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--surface3)">
+        <div style="width:24px;height:24px;border-radius:50%;background:${c};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;flex-shrink:0">${n.offset}</div>
+        <span style="font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.name}</span>
+      </div>`
+    }).join('')
   } else {
-    nextList.innerHTML = '<div style="font-size:11px;color:var(--text-dim)">—</div>';
+    nextList.innerHTML = '<div style="font-size:11px;color:var(--text-dim)">—</div>'
   }
 
   const todayStr = new Date().toDateString();
