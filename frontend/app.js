@@ -520,7 +520,7 @@ function renderDashboard() {
     nextList.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:4px 0">—</div>';
     cycleEl.innerHTML = '';
     if (todayList) todayList.innerHTML = '<div style="font-size:12px;color:var(--text-dim)">Nenhuma sessão hoje</div>';
-    renderConstantDashboard(); renderGoalProgress(); renderDashStats(); renderDashPriorities();
+    renderConstantDashboard(); renderFacultyDashboard(); renderGoalProgress(); renderDashStats(); renderDashPriorities();
     return;
   }
 
@@ -573,7 +573,7 @@ function renderDashboard() {
         `<div style="font-size:12px;color:var(--text-muted);padding:3px 0">${name} — ${formatShort(time)}</div>`
       ).join('');
 
-  renderConstantDashboard(); renderGoalProgress(); renderDashStats(); renderDashPriorities();
+  renderConstantDashboard(); renderFacultyDashboard(); renderGoalProgress(); renderDashStats(); renderDashPriorities();
   const dashView = document.getElementById('view-dashboard')
   if (dashView && !dashView.querySelector('.view-spacer')) dashView.insertAdjacentHTML('beforeend', '<div class="view-spacer" style="height:80px"></div>')
 }
@@ -596,6 +596,28 @@ function renderConstantDashboard() {
   }).join('');
 }
 
+function renderFacultyDashboard() {
+  const section = document.getElementById('faculty-dash-section')
+  if (!section) return
+  if (!state.facultySubjects || !state.facultySubjects.length) {
+    section.style.display = 'none'; return
+  }
+  section.style.display = 'block'
+  document.getElementById('faculty-dash-list').innerHTML =
+    state.facultySubjects.map(s => {
+      const name = s.name
+      const isActive = studyingConstant === name
+      const c = subjectColor(name)
+      const safe = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")
+      return `<div class="const-item${isActive ? ' const-active' : ''}"
+        onclick="selectConstantSubject('${safe}')">
+        <div class="const-badge" style="background:${c}">${subjectInitial(name)}</div>
+        <span class="const-name">${name}</span>
+        ${isActive ? '<span class="const-pill">selecionada</span>' : ''}
+      </div>`
+    }).join('')
+}
+
 function selectConstantSubject(name) {
   if (timerRunning || timerSeconds > 0) { showToast('Pare o timer atual primeiro'); return; }
   studyingConstant = (studyingConstant === name) ? null : name;
@@ -604,7 +626,7 @@ function selectConstantSubject(name) {
     nameEl.className = 'subject-name';
     nameEl.textContent = studyingConstant !== null ? studyingConstant : (state.subjects.length ? sName(state.subjects[state.currentIndex]) : '—');
   }
-  renderConstantDashboard(); renderGoalProgress();
+  renderConstantDashboard(); renderFacultyDashboard(); renderGoalProgress();
 }
 
 function addConstantSubject() {
@@ -615,7 +637,7 @@ function addConstantSubject() {
   if (state.constantSubjects.includes(name)) { showToast('Matéria já existe nas constantes'); return; }
   state.constantSubjects.push(name);
   save(); input.value = '';
-  renderConstantManage(); renderConstantDashboard();
+  renderConstantManage(); renderConstantDashboard(); renderFacultyDashboard();
 }
 
 function removeConstantSubject(idx) {
@@ -625,7 +647,7 @@ function removeConstantSubject(idx) {
     onConfirm: () => {
       state.constantSubjects.splice(idx, 1);
       if (studyingConstant === name) studyingConstant = null;
-      save(); renderConstantManage(); renderConstantDashboard();
+      save(); renderConstantManage(); renderConstantDashboard(); renderFacultyDashboard();
       showToast(`"${name}" removida`);
     }
   });
