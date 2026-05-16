@@ -1110,10 +1110,9 @@ function renderSubjects() {
           <button class="icon-btn" onclick="moveSubject(${i},-1)" ${i===0?'disabled':''}>↑</button>
           <button class="icon-btn" onclick="moveSubject(${i},1)" ${i===state.subjects.length-1?'disabled':''}>↓</button>` : ''}
         ${!isCurrent ? `<button onclick="selectSubjectAsCurrent(${i})"
-          style="font-size:9px;font-family:monospace;color:var(--accent);
-                 border:1px solid var(--accent);border-radius:4px;padding:2px 6px;
-                 background:none;cursor:pointer;letter-spacing:0.5px;white-space:nowrap">
-          ▶ atual
+          class="btn-set-current"
+          title="Tornar atual">
+          ▶ Tornar atual
         </button>` : ''}
         <button class="icon-btn edit" onclick="editSubject(${i})" title="Renomear">✎</button>
         <button class="icon-btn del" onclick="removeSubject(${i})" title="Remover">×</button>
