@@ -371,7 +371,6 @@ function updateTimerDisplay() {
   const el = document.getElementById('timer-display')
   if (el) {
     el.textContent = h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
-    el.style.color = timerRunning ? 'var(--accent)' : timerSeconds > 0 ? 'var(--orange)' : 'var(--text)'
   }
   updateTimerRing()
 }
