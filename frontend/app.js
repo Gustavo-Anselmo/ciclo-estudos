@@ -369,6 +369,34 @@ function updateTimerDisplay() {
   const pad = n => String(n).padStart(2, '0')
   document.getElementById('timer-display').textContent =
     h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
+  updateTimerRing()
+}
+
+function updateTimerRing() {
+  const ring = document.getElementById('timer-ring-fill')
+  const svg  = document.getElementById('timer-ring-svg')
+  if (!ring || !svg) return
+
+  if (!timerRunning && timerSeconds === 0) {
+    svg.style.opacity = '0.1'
+    ring.setAttribute('stroke-dashoffset', '565')
+    return
+  }
+
+  const total = pomoActive && pomoFocusSecs > 0
+    ? pomoFocusSecs
+    : Math.max(timerSeconds, 1)
+  const elapsed = pomoActive && pomoSecondsLeft > 0
+    ? pomoFocusSecs - pomoSecondsLeft
+    : timerSeconds
+
+  const pct  = Math.min(1, elapsed / total)
+  const circ = 2 * Math.PI * 90
+  const offset = circ * (1 - pct)
+
+  ring.setAttribute('stroke-dasharray', String(circ))
+  ring.setAttribute('stroke-dashoffset', String(offset))
+  svg.style.opacity = timerRunning ? '1' : '0.4'
 }
 
 function updatePauseDisplay() {
