@@ -939,3 +939,19 @@ header {
   background: radial-gradient(ellipse 55% 55% at 50% 38%,
     color-mix(in srgb, var(--accent) 12%, transparent) 0%, transparent 70%);
 }
+
+.btn-set-current {
+  font-size: 9px;
+  font-family: monospace;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 2px 6px;
+  background: none;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.subject-item:hover .btn-set-current { opacity: 1; }
