@@ -32,7 +32,7 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // ── SUBJECT HELPERS (string | {name, dailyGoal}) ──
-const COLORS = ['#4d9fff','#a78bfa','#fb923c','#34d399','#f472b6','#2dd4bf','#fbbf24','#f87171','#60a5fa','#c084fc'];
+const COLORS = ['#1d589b','#4b2da5','#e27923','#34d399','#a02263','#1f8f80','#fbbf24','#f85555','#60a5fa','#c084fc'];
 function subjectColor(name) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
@@ -395,6 +395,13 @@ function updateTimerRing() {
   const pct = timerRunning || timerSeconds > 0
     ? Math.min(1, timerSeconds / FULL_CYCLE_SECS)
     : 0
+
+  const grad0 = document.getElementById('timer-grad-0')
+  const grad1 = document.getElementById('timer-grad-1')
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
+  if (grad0) grad0.setAttribute('stop-color', accent)
+  if (grad1) grad1.setAttribute('stop-color', accent)
+  if (dot)   dot.style.fill = accent
 
   ring.setAttribute('stroke-dasharray', String(circ))
   ring.setAttribute('stroke-dashoffset', String(circ * (1 - pct)))

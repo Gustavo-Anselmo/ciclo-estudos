@@ -897,7 +897,7 @@ header {
 }
 
 .btn-timer-start {
-  width: 100%; padding: 10px 20px; font-size: 13px; font-weight: 600;
+  width: 60%; margin: 0 auto; padding: 12px 20px; font-size: 13px; font-weight: 600;
   border-radius: 10px; background: var(--accent); color: #000;
   border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -910,7 +910,7 @@ header {
   opacity: 0.6;
 }
 .btn-timer-secondary {
-  flex: 1; padding: 7px 14px; font-size: 11px; border-radius: 8px;
+  flex: 1; padding: 12px 14px; font-size: 11px; border-radius: 8px;
   background: none; border: 1px solid var(--surface3);
   color: var(--text-muted); cursor: pointer; letter-spacing: 1px;
   font-family: monospace; transition: all 0.15s;
@@ -920,7 +920,7 @@ header {
   border-color: var(--accent); color: var(--accent);
 }
 .btn-timer-danger {
-  flex: 1; padding: 7px 14px; font-size: 11px; border-radius: 8px;
+  flex: 1; padding: 12px 14px; font-size: 11px; border-radius: 8px;
   background: none; border: 1px solid var(--red);
   color: var(--red); cursor: pointer; letter-spacing: 1px;
   font-family: monospace; transition: all 0.15s;
@@ -931,14 +931,11 @@ header {
 }
 
 .timer-card {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
+  display: flex; flex-direction: column; gap: 8px;
+  background: transparent; border: none !important;
+  box-shadow: none !important; transition: background 0.5s;
 }
 .timer-card.running {
-  background: linear-gradient(180deg,
-    transparent 0%,
-    color-mix(in srgb, var(--accent) 8%, transparent) 100%);
-  border-color: color-mix(in srgb, var(--accent) 20%, transparent);
-  box-shadow: 0 0 40px color-mix(in srgb, var(--accent) 10%, transparent);
+  background: radial-gradient(ellipse 55% 55% at 50% 38%,
+    color-mix(in srgb, var(--accent) 12%, transparent) 0%, transparent 70%);
 }
