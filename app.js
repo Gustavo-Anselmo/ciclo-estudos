@@ -381,13 +381,13 @@ function updateTimerRing() {
   const dot  = document.getElementById('timer-ring-dot')
   if (!ring) return
 
-  const r    = 140
-  const circ = 2 * Math.PI * r
+  const r    = 152
+  const circ = 2 * Math.PI * r  // 955.04
 
   if (!timerRunning && timerSeconds === 0) {
     ring.style.opacity = '0'
-    if (dot) dot.style.opacity = '0'
     ring.setAttribute('stroke-dashoffset', String(circ))
+    if (dot) dot.style.opacity = '0'
     return
   }
 
@@ -398,12 +398,12 @@ function updateTimerRing() {
       : pomoFocusSecs
     pct = Math.min(1, elapsed / pomoFocusSecs)
   } else if (timerRunning) {
-    pct = 0 // sem Pomodoro não mostra progresso
+    pct = 0.2
   }
 
   ring.setAttribute('stroke-dasharray', String(circ))
   ring.setAttribute('stroke-dashoffset', String(circ * (1 - pct)))
-  ring.style.opacity = pct > 0 ? '1' : '0'
+  ring.style.opacity = '1'
 
   if (dot && pct > 0) {
     const angle = pct * 2 * Math.PI - Math.PI / 2

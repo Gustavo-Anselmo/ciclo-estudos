@@ -105,44 +105,48 @@
             </div>
 
             <!-- Timer central com anel -->
-            <div style="display:flex;align-items:center;justify-content:center">
-              <div style="position:relative;width:320px;height:320px;
-                          display:flex;align-items:center;justify-content:center">
-                <svg width="320" height="320" viewBox="0 0 320 320"
-                  style="position:absolute;top:0;left:0;pointer-events:none">
-                  <!-- Anel de fundo -->
-                  <circle cx="160" cy="160" r="140" fill="none"
-                    stroke="rgba(248,113,113,0.15)"
-                    stroke-width="4"/>
-                  <!-- Anel de progresso -->
-                  <circle id="timer-ring-fill" cx="160" cy="160" r="140"
-                    fill="none" stroke="#f87171"
-                    stroke-width="4" stroke-linecap="round"
-                    stroke-dasharray="879" stroke-dashoffset="879"
-                    transform="rotate(-90 160 160)"
-                    style="opacity:0;transition:stroke-dashoffset 0.5s ease,opacity 0.3s"/>
-                  <!-- Dot indicator -->
-                  <circle id="timer-ring-dot" cx="160" cy="20" r="5"
-                    fill="var(--accent)"
-                    style="opacity:0;transition:opacity 0.3s;
-                           filter:drop-shadow(0 0 4px var(--accent))"/>
-                </svg>
-                <div style="text-align:center;position:relative;z-index:1">
-                  <div id="timer-display"
-                    style="font-size:80px;font-weight:300;letter-spacing:-4px;
-                           line-height:1;color:var(--text);font-family:var(--sans);
-                           transition:color 0.3s">
-                    00:00
-                  </div>
-                  <div id="timer-status"
-                    style="font-size:10px;font-family:monospace;letter-spacing:3px;
-                           color:var(--text-dim);margin-top:12px;text-transform:uppercase">
-                    parado
-                  </div>
-                  <div id="pause-display"
-                    style="font-size:11px;color:var(--text-dim);margin-top:4px;
-                           min-height:16px"></div>
+            <div style="position:relative;width:320px;height:320px;
+                        display:flex;align-items:center;justify-content:center;
+                        margin:0 auto">
+              <svg width="320" height="320" viewBox="0 0 320 320"
+                style="transform:rotate(-90deg);position:absolute;top:0;left:0">
+                <defs>
+                  <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#f87171"/>
+                    <stop offset="100%" stop-color="#fb923c"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="160" cy="160" r="152" fill="transparent"
+                  stroke="rgba(248,113,113,0.1)" stroke-width="4"/>
+                <circle id="timer-ring-fill" cx="160" cy="160" r="152"
+                  fill="transparent" stroke="url(#timerGradient)"
+                  stroke-width="4" stroke-linecap="round"
+                  stroke-dasharray="955" stroke-dashoffset="955"
+                  style="opacity:0;transition:stroke-dashoffset 0.5s ease,opacity 0.3s"/>
+              </svg>
+              <svg id="timer-dot-svg" width="320" height="320"
+                viewBox="0 0 320 320"
+                style="position:absolute;top:0;left:0;pointer-events:none">
+                <circle id="timer-ring-dot" cx="160" cy="8" r="6"
+                  fill="#f87171"
+                  style="opacity:0;transition:opacity 0.3s;
+                         filter:drop-shadow(0 0 4px rgba(248,113,113,0.8))"/>
+              </svg>
+              <div class="timer-display-wrap">
+                <div id="timer-display"
+                  style="font-size:80px;font-weight:300;letter-spacing:-4px;
+                         line-height:1;color:var(--text);font-family:var(--sans);
+                         transition:color 0.3s">
+                  00:00
                 </div>
+                <div id="timer-status"
+                  style="font-size:10px;font-family:monospace;letter-spacing:3px;
+                         color:var(--text-dim);margin-top:10px;text-transform:uppercase">
+                  parado
+                </div>
+                <div id="pause-display"
+                  style="font-size:11px;color:var(--text-dim);margin-top:4px;
+                         min-height:16px"></div>
               </div>
             </div>
 
