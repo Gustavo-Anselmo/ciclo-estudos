@@ -89,37 +89,23 @@
 
         <div class="dash-left">
           <div class="card timer-card" id="timer-card">
-            <div>
-              <div class="subject-label">Estudando agora</div>
-              <div class="subject-name" id="current-subject-name">—</div>
-              <div class="cycle-indicator" id="cycle-indicator"></div>
+            <!-- Topo: matéria atual -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+              <div class="subject-label" id="studying-label">Estudando agora</div>
+              <div id="pomo-badge" style="display:none;font-size:9px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:20px;background:var(--accent);color:#000">● POMODORO</div>
+            </div>
+            <div class="subject-name" id="current-subject-name">—</div>
+            <div class="cycle-indicator" id="cycle-indicator"></div>
+
+            <!-- Timer central -->
+            <div style="text-align:center;padding:32px 0 20px">
+              <div class="timer-time" id="timer-display" style="font-size:clamp(56px,8vw,80px);font-weight:700;letter-spacing:-2px;line-height:1">00:00</div>
+              <div class="timer-status" id="timer-status" style="font-size:11px;font-family:monospace;letter-spacing:2px;color:var(--text-dim);margin-top:8px;text-transform:uppercase">parado</div>
+              <div class="pause-time" id="pause-display" style="font-size:11px;color:var(--text-dim);margin-top:4px"></div>
             </div>
 
-            <!-- Pomodoro -->
-            <div class="pomo-section">
-              <div class="pomo-toggle-row">
-                <span class="pomo-toggle-label">Modo Pomodoro</span>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="pomo-toggle" onchange="onPomoToggle()">
-                  <span class="toggle-knob"></span>
-                </label>
-              </div>
-              <div class="pomo-config" id="pomo-config">
-                <div class="pomo-field"><label>Foco (min)</label><input type="number" id="pomo-focus" value="25" min="1" max="120"></div>
-                <div class="pomo-field"><label>Pausa (min)</label><input type="number" id="pomo-break" value="5" min="1" max="60"></div>
-                <span id="pomo-phase-badge" class="pomo-phase-badge pomo-phase-focus">Foco</span>
-              </div>
-              <div class="pomo-block-bar" id="pomo-block-bar"><div class="pomo-block-bar-fill" id="pomo-bar-fill"></div></div>
-            </div>
-
-            <div class="timer-display">
-              <div class="timer-time" id="timer-display">00:00:00</div>
-              <div class="timer-status" id="timer-status">parado</div>
-              <div class="pause-time" id="pause-display"></div>
-            </div>
-
-            <!-- Goal progress -->
-            <div class="goal-section" id="goal-section">
+            <!-- Meta diária -->
+            <div class="goal-section" id="goal-section" style="margin-bottom:20px">
               <div class="goal-bar-meta">
                 <span id="goal-text"></span>
                 <span id="goal-pct"></span>
@@ -127,10 +113,38 @@
               <div class="goal-bar-track"><div class="goal-bar-fill" id="goal-fill"></div></div>
             </div>
 
-            <div class="timer-controls">
-              <button class="btn btn-primary" id="btn-start" onclick="startTimer()">Iniciar</button>
-              <button class="btn" id="btn-pause" onclick="pauseTimer()" disabled>Pausar</button>
-              <button class="btn btn-danger" id="btn-finish" onclick="finishSession()" disabled>Finalizar</button>
+            <!-- Botões -->
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-primary" id="btn-start" onclick="startTimer()"
+                style="width:100%;padding:14px;font-size:14px;font-weight:700;letter-spacing:1px;border-radius:10px">
+                ▶ Iniciar sessão
+              </button>
+              <div style="display:flex;gap:8px">
+                <button class="btn" id="btn-pause" onclick="pauseTimer()" disabled
+                  style="flex:1;padding:10px;font-size:13px">Pausar</button>
+                <button class="btn btn-danger" id="btn-finish" onclick="finishSession()" disabled
+                  style="flex:1;padding:10px;font-size:13px">Finalizar</button>
+              </div>
+            </div>
+
+            <!-- Pomodoro colapsável -->
+            <div style="margin-top:16px;border-top:1px solid var(--surface3);padding-top:12px">
+              <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"
+                onclick="document.getElementById('pomo-body').style.display=document.getElementById('pomo-body').style.display==='none'?'block':'none'">
+                <span style="font-size:11px;font-family:monospace;color:var(--text-muted);letter-spacing:1px">MODO POMODORO</span>
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                  <input type="checkbox" id="pomo-toggle" onchange="onPomoToggle()">
+                  <span class="toggle-knob"></span>
+                </label>
+              </div>
+              <div id="pomo-body" style="display:none;margin-top:10px">
+                <div class="pomo-config" id="pomo-config">
+                  <div class="pomo-field"><label>Foco (min)</label><input type="number" id="pomo-focus" value="25" min="1" max="120"></div>
+                  <div class="pomo-field"><label>Pausa (min)</label><input type="number" id="pomo-break" value="5" min="1" max="60"></div>
+                  <span id="pomo-phase-badge" class="pomo-phase-badge pomo-phase-focus">Foco</span>
+                </div>
+                <div class="pomo-block-bar" id="pomo-block-bar"><div class="pomo-block-bar-fill" id="pomo-bar-fill"></div></div>
+              </div>
             </div>
           </div>
 
