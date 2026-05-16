@@ -14,6 +14,7 @@ model User {
   subjects         Subject[]
   sessions         Session[]
   constantSubjects String[]
+  facultySubjects  String[]
   currentIndex     Int       @default(0)
   tasks            Task[]
   exams            Exam[]

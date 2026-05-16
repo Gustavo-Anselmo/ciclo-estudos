@@ -30,13 +30,14 @@ interface StateInput {
   subjects: SubjectInput[]
   sessions: SessionInput[]
   constantSubjects: string[]
+  facultySubjects: string[]
   currentIndex: number
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function emptyState() {
-  return { subjects: [], sessions: [], constantSubjects: [], currentIndex: 0 }
+  return { subjects: [], sessions: [], constantSubjects: [], facultySubjects: [], currentIndex: 0 }
 }
 
 async function loadUserState(userId: string) {
@@ -70,6 +71,7 @@ async function loadUserState(userId: string) {
       pauseDuration: s.pauseDuration,
     })),
     constantSubjects: user.constantSubjects ?? [],
+    facultySubjects: user.facultySubjects ?? [],
     currentIndex: user.currentIndex ?? 0,
   }
 }
@@ -97,6 +99,7 @@ export async function syncRoutes(app: FastifyInstance) {
     const subjects = Array.isArray(state?.subjects) ? state.subjects : []
     const sessions = Array.isArray(state?.sessions) ? state.sessions : []
     const constantSubjects = Array.isArray(state?.constantSubjects) ? state.constantSubjects : []
+    const facultySubjects = Array.isArray(state?.facultySubjects) ? state.facultySubjects : []
     const currentIndex = typeof state?.currentIndex === 'number' ? state.currentIndex : 0
 
     const user = await prisma.user.findUnique({ where: { id: userId } })
@@ -105,7 +108,7 @@ export async function syncRoutes(app: FastifyInstance) {
     await prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: userId },
-        data: { currentIndex, constantSubjects },
+        data: { currentIndex, constantSubjects, facultySubjects },
       })
 
       const validSubjectIds = (subjects as any[])
