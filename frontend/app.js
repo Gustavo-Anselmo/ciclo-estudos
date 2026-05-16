@@ -893,19 +893,30 @@ function removeConstantSubject(idx) {
 }
 
 function renderConstantManage() {
-  const list = document.getElementById('const-manage-list');
-  if (!list) return;
+  const list = document.getElementById('const-manage-list')
+  if (!list) return
   if (!state.constantSubjects || !state.constantSubjects.length) {
-    list.innerHTML = '<div class="const-empty">Nenhuma matéria constante cadastrada ainda.</div>'; return;
+    list.innerHTML = '<div class="const-empty">Nenhuma matéria constante cadastrada ainda.</div>'
+    return
   }
   list.innerHTML = state.constantSubjects.map((name, i) => {
-    const c = subjectColor(name);
-    return `<div class="const-manage-item">
-      <div class="const-icon" style="background:${c}">${subjectInitial(name)}</div>
-      <span class="const-manage-name">${name}</span>
-      <button class="icon-btn del" onclick="removeConstantSubject(${i})" title="Remover">×</button>
-    </div>`;
-  }).join('');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+                        border-radius:10px;margin-bottom:6px;
+                        background:var(--surface2);border:1px solid var(--border);
+                        transition:background 0.2s">
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:11px;font-weight:700;color:#000;flex-shrink:0">
+        ${subjectInitial(name)}
+      </div>
+      <span style="flex:1;font-size:13px;color:var(--text-muted);
+                   overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        ${name}
+      </span>
+      <button class="icon-btn del" onclick="removeConstantSubject(${i})"
+        title="Remover">×</button>
+    </div>`
+  }).join('')
 }
 
 // ── FACULTY SUBJECTS ──
@@ -937,13 +948,22 @@ function renderFacultySubjects() {
     return
   }
   list.innerHTML = state.facultySubjects.map((s, idx) => {
-    const c = subjectColor(s.name)
-    return `<div class="const-manage-item">
-      <div class="const-icon" style="background:${c}">${subjectInitial(s.name)}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name}</div>
+    const name = typeof s === 'string' ? s : s.name
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+                        border-radius:10px;margin-bottom:6px;
+                        background:var(--surface2);border:1px solid var(--border);
+                        transition:background 0.2s">
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:11px;font-weight:700;color:#000;flex-shrink:0">
+        ${subjectInitial(name)}
       </div>
-      <button class="icon-btn del" onclick="removeFacultySubject(${idx})" title="Remover">×</button>
+      <span style="flex:1;font-size:13px;color:var(--text-muted);
+                   overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        ${name}
+      </span>
+      <button class="icon-btn del" onclick="removeFacultySubject(${idx})"
+        title="Remover">×</button>
     </div>`
   }).join('')
 }
@@ -974,6 +994,15 @@ function removeSubject(idx) {
       showToast(`"${name}" removida`, 'success');
     }
   });
+}
+
+function selectSubjectAsCurrent(idx) {
+  state.currentIndex = idx
+  studyingConstant = null
+  save()
+  renderSubjects()
+  renderDashboard()
+  showToast(`${sName(state.subjects[idx])} definida como atual`, 'success')
 }
 
 function setSubjectGoal(idx, val) {
@@ -1045,34 +1074,56 @@ function onDragEnd() {
 }
 
 function renderSubjects() {
-  renderConstantManage();
-  renderFacultySubjects();
-  const list = document.getElementById('subjects-list');
+  renderConstantManage()
+  renderFacultySubjects()
+  const list = document.getElementById('subjects-list')
   if (!state.subjects.length) {
-    list.innerHTML = `<div class="empty-state"><p>📚</p><p>Nenhuma matéria ainda</p></div>`; return;
+    list.innerHTML = `<div class="empty-state"><p>📚</p><p>Nenhuma matéria ainda</p></div>`
+    return
   }
   list.innerHTML = state.subjects.map((subj, i) => {
-    const name    = sName(subj);
-    const goal    = sGoal(subj);
-    const isCurrent = i === state.currentIndex;
-    const dnd = isTouchDevice ? '' : `draggable="true" ondragstart="onDragStart(event,${i})" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event,${i})" ondragend="onDragEnd(event)"`;
-    return `<div class="subject-item ${isCurrent?'current-subject':''}" id="subject-item-${i}" ${dnd}>
-      ${!isTouchDevice ? '<span class="drag-handle" title="Arrastar">⠿</span>' : ''}
-      <span class="subject-order">${i+1}</span>
-      <span class="subject-item-name">${name}</span>
-      ${isCurrent ? '<span class="current-badge">atual</span>' : ''}
-      <input type="number" class="goal-input" min="0" max="720" placeholder="meta min" value="${goal||''}"
-        title="Meta diária em minutos"
-        onchange="setSubjectGoal(${i},this.value)" onclick="event.stopPropagation()">
-      <div class="move-btns">
-        ${isTouchDevice ? `<button class="icon-btn" onclick="moveSubject(${i},-1)" ${i===0?'disabled':''}>↑</button><button class="icon-btn" onclick="moveSubject(${i},1)" ${i===state.subjects.length-1?'disabled':''}>↓</button>` : ''}
-        <button class="icon-btn edit" onclick="editSubject(${i})" title="Renomear">✎</button>
-        <button class="icon-btn del"  onclick="removeSubject(${i})" title="Remover">×</button>
+    const name = sName(subj)
+    const isCurrent = i === state.currentIndex
+    const dnd = isTouchDevice ? '' : `draggable="true" ondragstart="onDragStart(event,${i})" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event,${i})" ondragend="onDragEnd(event)"`
+    return `<div class="subject-item ${isCurrent?'current-subject':''}" id="subject-item-${i}" ${dnd}
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+             border-radius:10px;margin-bottom:6px;cursor:pointer;
+             background:${isCurrent ? 'color-mix(in srgb,var(--accent) 12%,transparent)' : 'var(--surface2)'};
+             border:1px solid ${isCurrent ? 'color-mix(in srgb,var(--accent) 30%,transparent)' : 'var(--border)'};
+             transition:background 0.2s">
+      ${!isTouchDevice ? '<span class="drag-handle" title="Arrastar" style="color:var(--text-dim);cursor:grab;font-size:14px">⠿</span>' : ''}
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:11px;font-weight:700;color:#000;flex-shrink:0">
+        ${i + 1}
       </div>
-    </div>`;
-  }).join('');
+      <span style="flex:1;font-size:13px;color:${isCurrent ? 'var(--text)' : 'var(--text-muted)'};
+                   font-weight:${isCurrent ? '600' : '400'};
+                   overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        ${name}
+      </span>
+      ${isCurrent ? `<span style="font-size:9px;font-family:monospace;color:var(--accent);
+                              letter-spacing:1px;border:1px solid var(--accent);
+                              border-radius:4px;padding:2px 6px">ATUAL</span>` : ''}
+      <div style="display:flex;gap:4px;align-items:center">
+        ${isTouchDevice ? `
+          <button class="icon-btn" onclick="moveSubject(${i},-1)" ${i===0?'disabled':''}>↑</button>
+          <button class="icon-btn" onclick="moveSubject(${i},1)" ${i===state.subjects.length-1?'disabled':''}>↓</button>` : ''}
+        ${!isCurrent ? `<button onclick="selectSubjectAsCurrent(${i})"
+          style="font-size:9px;font-family:monospace;color:var(--accent);
+                 border:1px solid var(--accent);border-radius:4px;padding:2px 6px;
+                 background:none;cursor:pointer;letter-spacing:0.5px;white-space:nowrap">
+          ▶ atual
+        </button>` : ''}
+        <button class="icon-btn edit" onclick="editSubject(${i})" title="Renomear">✎</button>
+        <button class="icon-btn del" onclick="removeSubject(${i})" title="Remover">×</button>
+      </div>
+    </div>`
+  }).join('')
   const subjView = document.getElementById('view-subjects')
-  if (subjView && !subjView.querySelector('.view-spacer')) subjView.insertAdjacentHTML('beforeend', '<div class="view-spacer" style="height:80px"></div>')
+  if (subjView && !subjView.querySelector('.view-spacer'))
+    subjView.insertAdjacentHTML('beforeend',
+      '<div class="view-spacer" style="height:80px"></div>')
 }
 
 // ── HISTORY ──
