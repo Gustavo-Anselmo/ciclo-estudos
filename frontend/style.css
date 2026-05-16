@@ -259,7 +259,7 @@ body {
 header {
   margin-left: 200px;
   padding: 16px 28px;
-  border-bottom: 1px solid var(--border);
+  /* border-bottom: 1px solid var(--border); */
   display: flex;
   align-items: center;
   justify-content: space-between;
