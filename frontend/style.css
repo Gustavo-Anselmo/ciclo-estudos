@@ -881,3 +881,18 @@ header {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.3; }
 }
+
+.timer-card {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.timer-display-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
