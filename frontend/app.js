@@ -535,75 +535,95 @@ function renderDashStats() {
   ].join('')
 }
 
-function renderFocusToday() {
-  const el = document.getElementById('focus-today-content')
+function renderHoje() {
+  const el = document.getElementById('hoje-content')
   if (!el) return
 
   const todayStr  = new Date().toDateString()
-  const todaySecs = state.sessions
-    .filter(s => new Date(s.end).toDateString() === todayStr)
-    .reduce((a, s) => a + s.duration, 0) + (timerRunning ? timerSeconds : 0)
-
+  const todaySess = state.sessions.filter(s =>
+    new Date(s.end).toDateString() === todayStr)
+  const todaySecs = todaySess.reduce((a, s) => a + s.duration, 0) +
+    (timerRunning ? timerSeconds : 0)
   const totalGoalSecs = state.subjects.reduce((a, s) => a + sGoal(s) * 60, 0)
 
-  if (!totalGoalSecs) {
-    el.innerHTML = `<div style="font-size:12px;color:var(--text-dim)">
-      Defina metas diárias nas matérias para ver seu progresso.</div>`
-    return
-  }
-
-  const pct   = Math.min(1, todaySecs / totalGoalSecs)
-  const done  = todaySecs >= totalGoalSecs
-  const color = done ? 'var(--green)' : pct >= 0.6 ? 'var(--accent)'
-    : pct >= 0.3 ? 'var(--orange)' : '#f87171'
-
-  const r1 = 34, r2 = 26, r3 = 18
-  const c1 = 2 * Math.PI * r1
   const fmtSecs = secs => {
     const h = Math.floor(secs / 3600)
     const m = Math.floor((secs % 3600) / 60)
     if (h > 0) return m > 0 ? `${h}h ${m}min` : `${h}h`
     return m > 0 ? `${m}min` : secs > 0 ? `${secs}s` : '0min'
   }
-  const msg = done ? 'Meta diária atingida! 🎉'
-    : pct >= 0.6 ? 'Bom progresso, continue!'
-    : pct >= 0.3 ? 'Você está no caminho certo.'
-    : 'Pequeno progresso todos os dias gera grandes resultados.'
 
-  el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
-      <svg width="80" height="80" viewBox="0 0 80 80" style="flex-shrink:0">
-        <circle cx="40" cy="40" r="${r1}" fill="none"
-          stroke="rgba(248,113,113,0.1)" stroke-width="5"/>
-        <circle cx="40" cy="40" r="${r2}" fill="none"
-          stroke="rgba(248,113,113,0.15)" stroke-width="5"/>
-        <circle cx="40" cy="40" r="${r3}" fill="none"
-          stroke="rgba(248,113,113,0.2)" stroke-width="5"/>
-        <circle cx="40" cy="40" r="${r1}" fill="none"
-          stroke="${color}" stroke-width="5"
-          stroke-linecap="round"
-          stroke-dasharray="${c1}"
-          stroke-dashoffset="${c1 * (1 - pct)}"
-          transform="rotate(-90 40 40)"
-          style="transition:stroke-dashoffset .6s ease"/>
-      </svg>
-      <div>
-        <div style="display:flex;align-items:baseline;gap:4px">
-          <span style="font-size:22px;font-weight:700;color:${color}">
-            ${fmtSecs(todaySecs)}
-          </span>
-          <span style="font-size:13px;color:var(--text-dim)">
-            / ${fmtSecs(totalGoalSecs)}
-          </span>
+  let progressHTML = ''
+  if (totalGoalSecs > 0) {
+    const pct   = Math.min(1, todaySecs / totalGoalSecs)
+    const pctN  = Math.round(pct * 100)
+    const done  = pct >= 1
+    const color = done ? 'var(--green)'
+      : pct >= 0.6 ? 'var(--accent)'
+      : pct >= 0.3 ? 'var(--orange)' : '#f87171'
+    const r1 = 34, r2 = 26, r3 = 18
+    const c1 = 2 * Math.PI * r1
+    const msg = done ? 'Meta diária atingida! 🎉'
+      : pct >= 0.6 ? 'Bom progresso, continue!'
+      : pct >= 0.3 ? 'Você está no caminho certo.'
+      : 'Pequeno progresso todos os dias gera grandes resultados.'
+
+    progressHTML = `
+      <div style="display:flex;align-items:center;gap:14px;
+                  margin-bottom:14px;padding-bottom:12px;
+                  border-bottom:1px solid var(--surface3)">
+        <svg width="80" height="80" viewBox="0 0 80 80" style="flex-shrink:0">
+          <circle cx="40" cy="40" r="${r1}" fill="none"
+            stroke="rgba(248,113,113,0.08)" stroke-width="5"/>
+          <circle cx="40" cy="40" r="${r2}" fill="none"
+            stroke="rgba(248,113,113,0.12)" stroke-width="5"/>
+          <circle cx="40" cy="40" r="${r3}" fill="none"
+            stroke="rgba(248,113,113,0.18)" stroke-width="5"/>
+          <circle cx="40" cy="40" r="${r1}" fill="none"
+            stroke="${color}" stroke-width="5"
+            stroke-linecap="round"
+            stroke-dasharray="${c1}"
+            stroke-dashoffset="${c1 * (1 - pct)}"
+            transform="rotate(-90 40 40)"
+            style="transition:stroke-dashoffset .6s ease"/>
+        </svg>
+        <div>
+          <div style="display:flex;align-items:baseline;gap:6px">
+            <span style="font-size:22px;font-weight:700;color:${color};
+                         line-height:1">${fmtSecs(todaySecs)}</span>
+            <span style="font-size:12px;color:var(--text-dim)">
+              / ${fmtSecs(totalGoalSecs)}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">
+            Meta diária — ${pctN}%
+          </div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:6px;
+                      font-style:italic">${msg}</div>
         </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">
-          Meta diária
-        </div>
-      </div>
-    </div>
-    <div style="font-size:11px;color:var(--text-muted);font-style:italic">
-      ${msg}
-    </div>`
+      </div>`
+  }
+
+  const bySubject = {}
+  todaySess.forEach(s => {
+    bySubject[s.subject] = (bySubject[s.subject] || 0) + s.duration
+  })
+  const entries = Object.entries(bySubject).sort((a, b) => b[1] - a[1])
+  const sessionsHTML = !entries.length
+    ? `<div style="font-size:12px;color:var(--text-dim)">
+         Nenhuma sessão hoje</div>`
+    : entries.map(([name, time]) =>
+        `<div style="display:flex;justify-content:space-between;
+                     align-items:center;padding:5px 0;
+                     border-bottom:1px solid var(--surface3)">
+          <span style="font-size:12px;color:var(--text-muted);
+                       overflow:hidden;text-overflow:ellipsis;
+                       white-space:nowrap;max-width:65%">${name}</span>
+          <span style="font-size:12px;font-family:monospace;
+                       color:var(--accent)">${fmtSecs(time)}</span>
+        </div>`
+      ).join('')
+
+  el.innerHTML = progressHTML + sessionsHTML
 }
 
 function renderDashPriorities() {
@@ -660,16 +680,13 @@ function renderDashboard() {
   const nameEl    = document.getElementById('current-subject-name');
   const nextList  = document.getElementById('next-list');
   const cycleEl   = document.getElementById('cycle-indicator');
-  const todayList = document.getElementById('today-list');
-
   if (!state.subjects.length && studyingConstant === null) {
     nameEl.textContent = 'Nenhuma matéria cadastrada';
     nameEl.className = 'subject-name empty';
     document.getElementById('active-task-label')?.remove()
     nextList.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:4px 0">—</div>';
     cycleEl.innerHTML = '';
-    if (todayList) todayList.innerHTML = '<div style="font-size:12px;color:var(--text-dim)">Nenhuma sessão hoje</div>';
-    renderConstantDashboard(); renderFacultyDashboard(); renderGoalProgress(); renderDashStats(); renderFocusToday(); renderDashPriorities();
+    renderConstantDashboard(); renderFacultyDashboard(); renderGoalProgress(); renderDashStats(); renderHoje(); renderDashPriorities();
     return;
   }
 
@@ -732,20 +749,7 @@ function renderDashboard() {
     nextList.innerHTML = '<div style="font-size:11px;color:var(--text-dim)">—</div>'
   }
 
-  const todayStr = new Date().toDateString();
-  const bySubject = {};
-  state.sessions.filter(s => new Date(s.end).toDateString() === todayStr).forEach(s => {
-    bySubject[s.subject] = (bySubject[s.subject] || 0) + s.duration;
-  });
-  const entries = Object.entries(bySubject).sort((a, b) => b[1] - a[1]);
-
-  if (todayList) todayList.innerHTML = !entries.length
-    ? '<div style="font-size:12px;color:var(--text-dim)">Nenhuma sessão hoje</div>'
-    : entries.map(([name, time]) =>
-        `<div style="font-size:12px;color:var(--text-muted);padding:3px 0">${name} — ${formatShort(time)}</div>`
-      ).join('');
-
-  renderConstantDashboard(); renderFacultyDashboard(); renderGoalProgress(); renderDashStats(); renderFocusToday(); renderDashPriorities();
+  renderConstantDashboard(); renderFacultyDashboard(); renderGoalProgress(); renderDashStats(); renderHoje(); renderDashPriorities();
   const dashView = document.getElementById('view-dashboard')
   if (dashView && !dashView.querySelector('.view-spacer')) dashView.insertAdjacentHTML('beforeend', '<div class="view-spacer" style="height:80px"></div>')
 }
