@@ -398,12 +398,12 @@ function updateTimerRing() {
       : pomoFocusSecs
     pct = Math.min(1, elapsed / pomoFocusSecs)
   } else if (timerRunning) {
-    pct = 0.15
+    pct = 0 // sem Pomodoro não mostra progresso
   }
 
   ring.setAttribute('stroke-dasharray', String(circ))
   ring.setAttribute('stroke-dashoffset', String(circ * (1 - pct)))
-  ring.style.opacity = pct > 0 ? '1' : '0.3'
+  ring.style.opacity = pct > 0 ? '1' : '0'
 
   if (dot && pct > 0) {
     const angle = pct * 2 * Math.PI - Math.PI / 2
@@ -481,9 +481,11 @@ function renderDashStats() {
   if (!el) return
 
   const todayStr  = new Date().toDateString()
-  const todaySess = state.sessions.filter(s => new Date(s.end).toDateString() === todayStr)
+  const todaySess = state.sessions.filter(s =>
+    new Date(s.end).toDateString() === todayStr)
   const todaySecs = todaySess.reduce((a, s) => a + s.duration, 0)
-  const weekSess  = state.sessions.filter(s => new Date(s.end) >= getWeekStart())
+  const weekSess  = state.sessions.filter(s =>
+    new Date(s.end) >= getWeekStart())
   const weekSecs  = weekSess.reduce((a, s) => a + s.duration, 0)
   const streak    = calcStreak()
   const total     = state.sessions.length
@@ -492,23 +494,42 @@ function renderDashStats() {
     const h = Math.floor(secs / 3600)
     const m = Math.floor((secs % 3600) / 60)
     if (h > 0) return m > 0 ? `${h}h ${m}min` : `${h}h`
-    if (m > 0) return `${m}min`
-    return secs > 0 ? `${secs}s` : '—'
+    return m > 0 ? `${m}min` : secs > 0 ? `${secs}s` : '—'
   }
 
-  const card = (label, value, sub = '', color = 'var(--text)') =>
-    `<div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:14px 16px">
-      <div style="font-size:9px;color:var(--text-dim);font-family:monospace;letter-spacing:1px;margin-bottom:6px">${label}</div>
-      <div style="font-size:20px;font-weight:700;color:${color};line-height:1">${value}</div>
-      ${sub ? `<div style="font-size:10px;color:var(--text-dim);margin-top:4px">${sub}</div>` : ''}
+  const icons = {
+    clock:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    trend:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
+    flame:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 3z"/></svg>`,
+    target: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`,
+  }
+
+  const card = (icon, label, value, sub, color = 'var(--text)') =>
+    `<div style="background:var(--surface2);border:1px solid var(--surface3);
+                 border-radius:10px;padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:6px;color:var(--text-dim);
+                  margin-bottom:8px">
+        ${icon}
+        <span style="font-size:9px;font-family:monospace;letter-spacing:1px">
+          ${label}
+        </span>
+      </div>
+      <div style="font-size:22px;font-weight:600;color:${color};line-height:1">
+        ${value}
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">${sub}</div>
     </div>`
 
   el.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px'
   el.innerHTML = [
-    card('TEMPO HOJE',  fmtSecs(todaySecs), `${todaySess.length} sess${todaySess.length === 1 ? 'ão' : 'ões'}`),
-    card('ESTA SEMANA', fmtSecs(weekSecs),  `${weekSess.length} sessões`),
-    card('SEQUÊNCIA',   streak > 0 ? `${streak}d` : '—', streak > 0 ? `${streak === 1 ? 'dia' : 'dias'} seguidos` : 'sem sequência', streak > 0 ? 'var(--orange)' : 'var(--text-dim)'),
-    card('SESSÕES',     `${total}`, 'total registradas'),
+    card(icons.clock,  'HOJE',      fmtSecs(todaySecs),
+      `${todaySess.length} sess${todaySess.length===1?'ão':'ões'}`),
+    card(icons.trend,  'SEMANA',    fmtSecs(weekSecs),
+      `${weekSess.length} sessões`),
+    card(icons.flame,  'SEQUÊNCIA', streak > 0 ? `${streak}d` : '—',
+      streak > 0 ? `Melhor sequência` : 'sem sequência',
+      streak > 0 ? 'var(--orange)' : 'var(--text-dim)'),
+    card(icons.target, 'SESSÕES',   `${total}`, 'concluídas'),
   ].join('')
 }
 
@@ -521,8 +542,7 @@ function renderFocusToday() {
     .filter(s => new Date(s.end).toDateString() === todayStr)
     .reduce((a, s) => a + s.duration, 0) + (timerRunning ? timerSeconds : 0)
 
-  const totalGoalSecs = state.subjects
-    .reduce((a, s) => a + (sGoal(s) * 60), 0)
+  const totalGoalSecs = state.subjects.reduce((a, s) => a + sGoal(s) * 60, 0)
 
   if (!totalGoalSecs) {
     el.innerHTML = `<div style="font-size:12px;color:var(--text-dim)">
@@ -530,53 +550,58 @@ function renderFocusToday() {
     return
   }
 
-  const pct  = Math.min(100, Math.round(todaySecs / totalGoalSecs * 100))
-  const done = todaySecs >= totalGoalSecs
-  const color = done ? 'var(--green)' : pct >= 60 ? 'var(--accent)' : pct >= 30 ? 'var(--orange)' : 'var(--red)'
+  const pct   = Math.min(1, todaySecs / totalGoalSecs)
+  const done  = todaySecs >= totalGoalSecs
+  const color = done ? 'var(--green)' : pct >= 0.6 ? 'var(--accent)'
+    : pct >= 0.3 ? 'var(--orange)' : '#f87171'
 
-  const r = 28, circ = 2 * Math.PI * r
-  const dash = (pct / 100) * circ
-
+  const r1 = 34, r2 = 26, r3 = 18
+  const c1 = 2 * Math.PI * r1
   const fmtSecs = secs => {
     const h = Math.floor(secs / 3600)
     const m = Math.floor((secs % 3600) / 60)
     if (h > 0) return m > 0 ? `${h}h ${m}min` : `${h}h`
     return m > 0 ? `${m}min` : secs > 0 ? `${secs}s` : '0min'
   }
-
-  const msg = done
-    ? 'Meta diária atingida! 🎉'
-    : pct >= 60 ? 'Bom progresso, continue!'
-    : pct >= 30 ? 'Você está no caminho certo.'
+  const msg = done ? 'Meta diária atingida! 🎉'
+    : pct >= 0.6 ? 'Bom progresso, continue!'
+    : pct >= 0.3 ? 'Você está no caminho certo.'
     : 'Pequeno progresso todos os dias gera grandes resultados.'
 
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
-      <svg width="72" height="72" style="flex-shrink:0">
-        <circle cx="36" cy="36" r="${r}" fill="none"
-          stroke="var(--surface3)" stroke-width="5"/>
-        <circle cx="36" cy="36" r="${r}" fill="none"
+      <svg width="80" height="80" viewBox="0 0 80 80" style="flex-shrink:0">
+        <circle cx="40" cy="40" r="${r1}" fill="none"
+          stroke="rgba(248,113,113,0.1)" stroke-width="5"/>
+        <circle cx="40" cy="40" r="${r2}" fill="none"
+          stroke="rgba(248,113,113,0.15)" stroke-width="5"/>
+        <circle cx="40" cy="40" r="${r3}" fill="none"
+          stroke="rgba(248,113,113,0.2)" stroke-width="5"/>
+        <circle cx="40" cy="40" r="${r1}" fill="none"
           stroke="${color}" stroke-width="5"
-          stroke-dasharray="${dash} ${circ}"
-          stroke-dashoffset="${circ / 4}"
           stroke-linecap="round"
-          style="transition:stroke-dasharray .6s ease"/>
-        <text x="36" y="40" text-anchor="middle"
-          style="font-size:13px;font-weight:700;fill:${color};font-family:var(--sans)">
-          ${pct}%
-        </text>
+          stroke-dasharray="${c1}"
+          stroke-dashoffset="${c1 * (1 - pct)}"
+          transform="rotate(-90 40 40)"
+          style="transition:stroke-dashoffset .6s ease"/>
       </svg>
       <div>
-        <div style="font-size:20px;font-weight:700;color:${color};line-height:1">
-          ${fmtSecs(todaySecs)}
+        <div style="display:flex;align-items:baseline;gap:4px">
+          <span style="font-size:22px;font-weight:700;color:${color}">
+            ${fmtSecs(todaySecs)}
+          </span>
+          <span style="font-size:13px;color:var(--text-dim)">
+            / ${fmtSecs(totalGoalSecs)}
+          </span>
         </div>
-        <div style="font-size:12px;color:var(--text-dim);margin-top:4px">
-          / ${fmtSecs(totalGoalSecs)} meta diária
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">
+          Meta diária
         </div>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--text-muted);font-style:italic">${msg}</div>
-  `
+    <div style="font-size:11px;color:var(--text-muted);font-style:italic">
+      ${msg}
+    </div>`
 }
 
 function renderDashPriorities() {
@@ -676,11 +701,30 @@ function renderDashboard() {
     const nexts = []
     for (let i = 1; i <= 5; i++)
       nexts.push({ name: sName(state.subjects[(state.currentIndex + i) % state.subjects.length]), offset: i })
-    nextList.innerHTML = nexts.map(n => {
+    nextList.innerHTML = nexts.map((n, i) => {
       const c = subjectColor(n.name)
-      return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--surface3)">
-        <div style="width:24px;height:24px;border-radius:50%;background:${c};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;flex-shrink:0">${n.offset}</div>
-        <span style="font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.name}</span>
+      const isFirst = i === 0
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;
+                border-radius:10px;margin-bottom:4px;cursor:pointer;
+                background:${isFirst ? 'color-mix(in srgb,'+c+' 15%,transparent)' : 'transparent'};
+                border:1px solid ${isFirst ? 'color-mix(in srgb,'+c+' 30%,transparent)' : 'transparent'};
+                transition:background 0.2s"
+              onclick="state.currentIndex=(state.currentIndex+${n.offset})%state.subjects.length;save();renderDashboard()">
+        <div style="width:26px;height:26px;border-radius:50%;background:${c};
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:11px;font-weight:700;color:#000;flex-shrink:0">
+          ${n.offset}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:${isFirst ? 'var(--text)' : 'var(--text-muted)'};
+                      font-weight:${isFirst ? '600' : '400'};
+                      overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            ${n.name}
+          </div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:1px">
+            Próxima sessão
+          </div>
+        </div>
       </div>`
     }).join('')
   } else {
