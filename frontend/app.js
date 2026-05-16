@@ -92,7 +92,7 @@ function save() {
       sessions: normalizedSessions,
       constantSubjects: state.constantSubjects || [],
       facultySubjects: (state.facultySubjects || []).map(s =>
-        typeof s === 'string' ? s : s.name),
+        typeof s === 'string' ? s : (s.name || '')).filter(Boolean),
       currentIndex: state.currentIndex || 0
     }
 
@@ -133,12 +133,33 @@ async function initSync() {
     USER_ID = data.userId
     updateUserIdDisplay()
     const remote = data.state
-    state.subjects      = remote.subjects      ?? state.subjects
-    state.sessions      = remote.sessions      ?? state.sessions
-    state.constantSubjects = remote.constantSubjects ?? state.constantSubjects
-    state.facultySubjects  = (remote.facultySubjects ?? []).map(s =>
-      typeof s === 'string' ? { name: s } : s)
-    state.currentIndex  = remote.currentIndex  ?? state.currentIndex
+
+    // Para cada campo: só aceita o valor do banco se ele
+    // tiver dados — protege contra race condition do PUT
+    // fire-and-forget que ainda não chegou ao backend
+
+    if (remote.subjects && remote.subjects.length > 0) {
+      state.subjects     = remote.subjects
+      state.sessions     = remote.sessions ?? state.sessions
+      state.currentIndex = remote.currentIndex ?? state.currentIndex
+    }
+
+    if (remote.constantSubjects && remote.constantSubjects.length > 0) {
+      state.constantSubjects = remote.constantSubjects
+    }
+
+    // facultySubjects: banco manda strings, frontend usa objetos
+    // só sobrescreve se o banco tiver dados — senão mantém localStorage
+    if (remote.facultySubjects && remote.facultySubjects.length > 0) {
+      state.facultySubjects = remote.facultySubjects.map(s =>
+        typeof s === 'string' ? { name: s } : s)
+    }
+    // se banco vazio mas localStorage tem dados, normaliza o formato
+    else if (state.facultySubjects && state.facultySubjects.length > 0) {
+      state.facultySubjects = state.facultySubjects.map(s =>
+        typeof s === 'string' ? { name: s } : s)
+    }
+
     save()
   } catch {
     // Server offline — continue with localStorage
