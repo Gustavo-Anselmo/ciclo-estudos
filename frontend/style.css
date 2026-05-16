@@ -560,6 +560,9 @@ header {
 /* ── TOAST ── */
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(16px); background: var(--surface2); border: 1px solid var(--border-light); color: var(--text); padding: 9px 18px; border-radius: 7px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 300; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.toast-success { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.toast.toast-error   { background: var(--red-dim);   border-color: var(--red);   color: var(--red); }
+.toast.toast-info    { background: var(--surface3);  border-color: var(--surface4); color: var(--text-muted); }
 
 /* ── MODAL ── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
