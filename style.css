@@ -287,16 +287,17 @@ header {
 .view.active { display: block; }
 
 /* ── DASHBOARD ── */
-#view-dashboard { max-width: 900px; margin: 0 auto; }
+#view-dashboard { max-width: 1100px; margin: 0 auto; }
 
-.dashboard-layout { display: grid; grid-template-columns: 1fr 260px; gap: 14px; }
+.dashboard-layout { display: grid; grid-template-columns: 1fr 300px; gap: 18px; }
 
 .card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 24px; }
 
 .timer-card {
-  display: flex; flex-direction: column; gap: 16px;
+  display: flex; flex-direction: column; gap: 10px;
   transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
 }
+.timer-card.card { padding: 20px; }
 .timer-card.running {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent), 0 0 32px var(--accent-dim2);
@@ -872,3 +873,6 @@ header {
 
 .skeleton-block { background: linear-gradient(90deg, var(--surface3) 25%, var(--surface4) 50%, var(--surface3) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
 @keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+
+#timer-ring-idle { transition: opacity 0.3s; }
+#timer-ring-fill { transition: stroke-dashoffset 0.5s ease, stroke 0.3s, opacity 0.3s; }
