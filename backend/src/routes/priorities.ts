@@ -144,19 +144,47 @@ export async function priorityRoutes(app: FastifyInstance) {
 
       const prompt = buildPrioritiesPrompt(subjects, pendingTasks, upcomingExams, sessionsBySubject)
 
+      const buildFallback = () => {
+        const fallbackPriorities = subjects.map(s => {
+          const mins = sessionsBySubject.find(ss => ss.subject === s.name)?.totalMinutes ?? 0
+          const exam = upcomingExams.find(e => e.subjectName === s.name)
+          const urgencyLevel: PriorityItem['urgencyLevel'] = exam && exam.daysUntil <= 7 ? 'critical'
+            : exam && exam.daysUntil <= 14 ? 'high'
+            : mins === 0 ? 'high'
+            : mins < 60 ? 'medium' : 'low'
+          return {
+            subjectName: s.name,
+            urgencyLevel,
+            reason: exam
+              ? `Prova em ${exam.daysUntil} dia(s)`
+              : mins === 0 ? 'Sem estudo nos últimos 14 dias' : `${mins}min estudados`,
+            pendingTopics: pendingTasks.find(t => t.subjectName === s.name)?.topicCount ?? 0,
+          }
+        }).sort((a, b) => {
+          const order = { critical: 0, high: 1, medium: 2, low: 3 }
+          return order[a.urgencyLevel] - order[b.urgencyLevel]
+        })
+        return {
+          priorities: fallbackPriorities,
+          summary: 'Prioridades calculadas automaticamente — IA temporariamente indisponível.',
+          isFallback: true,
+        }
+      }
+
       let raw: string
       try {
         raw = await askGroq(prompt)
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        return reply.code(500).send({ error: 'AI_ERROR', message })
+        app.log.warn({ err }, 'Groq falhou — usando fallback em priorities')
+        return reply.code(200).send(buildFallback())
       }
 
       let result: PrioritiesResponse
       try {
         result = parseAIJSON<PrioritiesResponse>(raw)
       } catch {
-        return reply.code(500).send({ error: 'AI_PARSE_ERROR', raw })
+        app.log.warn('Groq parse falhou — usando fallback em priorities')
+        return reply.code(200).send(buildFallback())
       }
 
       return reply.code(200).send(result)

@@ -140,37 +140,61 @@ export async function progressRoutes(app: FastifyInstance) {
 
       const totalStudiedMinutes = subjectsWithData.reduce((a, s) => a + s.studiedMinutes, 0)
 
-      // Use Gemini for natural-language analysis
+      let raw: string
+      try {
+        raw = await askGroq(buildPrompt(subjectsWithData, totalStudiedMinutes))
+      } catch (err) {
+        app.log.warn({ err }, 'Groq falhou — usando fallback em progress')
+        return reply.code(200).send({
+          overallStatus: 'on_track',
+          overallMessage: 'Diagnóstico automático — IA temporariamente indisponível.',
+          priorityAction: subjectsWithData.find((s) => s.status === 'neglected')?.name
+            ?? subjectsWithData.find((s) => s.status === 'behind')?.name
+            ?? 'Continue seu ciclo normalmente.',
+          subjects: subjectsWithData.map((s) => ({
+            name: s.name,
+            studiedMinutes: s.studiedMinutes,
+            goalMinutes: s.goalMinutes,
+            status: s.status,
+            recommendation: s.status === 'neglected'
+              ? 'Você não estudou essa matéria esta semana.'
+              : s.status === 'behind'
+              ? 'Abaixo da meta semanal — aumente o ritmo.'
+              : 'No caminho certo.',
+          })),
+          isFallback: true,
+        })
+      }
+
       let geminiData: {
         overallStatus: string
         overallMessage: string
         priorityAction: string
         subjects: { name: string; recommendation: string }[]
       }
-
       try {
-        const raw = await askGroq(buildPrompt(subjectsWithData, totalStudiedMinutes))
         geminiData = parseAIJSON<typeof geminiData>(raw)
-      } catch (err) {
-        app.log.error(err, 'Gemini failed for progress diagnosis — using fallback')
-        const mostNeglected = subjectsWithData.find((s) => s.studiedMinutes === 0)
-        geminiData = {
-          overallStatus: totalStudiedMinutes > 0 ? 'on_track' : 'behind',
-          overallMessage:
-            totalStudiedMinutes > 0
-              ? 'Você está progredindo esta semana!'
-              : 'Nenhuma sessão registrada esta semana. Que tal começar agora?',
-          priorityAction: mostNeglected
-            ? `Inclua um bloco de ${mostNeglected.name} hoje.`
-            : 'Continue mantendo o ritmo de estudos.',
+      } catch {
+        app.log.warn('Groq parse falhou — usando fallback em progress')
+        return reply.code(200).send({
+          overallStatus: 'on_track',
+          overallMessage: 'Diagnóstico automático — IA temporariamente indisponível.',
+          priorityAction: subjectsWithData.find((s) => s.status === 'neglected')?.name
+            ?? subjectsWithData.find((s) => s.status === 'behind')?.name
+            ?? 'Continue seu ciclo normalmente.',
           subjects: subjectsWithData.map((s) => ({
             name: s.name,
-            recommendation:
-              s.studiedMinutes === 0
-                ? 'Não estudada esta semana — inclua um bloco hoje.'
-                : 'Continue progredindo.',
+            studiedMinutes: s.studiedMinutes,
+            goalMinutes: s.goalMinutes,
+            status: s.status,
+            recommendation: s.status === 'neglected'
+              ? 'Você não estudou essa matéria esta semana.'
+              : s.status === 'behind'
+              ? 'Abaixo da meta semanal — aumente o ritmo.'
+              : 'No caminho certo.',
           })),
-        }
+          isFallback: true,
+        })
       }
 
       const recommendationMap = new Map(

@@ -157,21 +157,45 @@ export async function recommendationRoutes(app: FastifyInstance) {
       let rawText: string
       try {
         rawText = await askGroq(buildPrompt(request.body))
-      } catch (err: unknown) {
-        app.log.error(err, 'Groq call failed')
-        const message = err instanceof Error ? err.message : String(err)
-        return reply.code(500).send({ error: 'AI_ERROR', message })
+      } catch (err) {
+        app.log.warn({ err }, 'Groq falhou — usando fallback em recommendation')
+        const { sessionsToday, subjects } = request.body
+        const notStudied = subjects
+          .filter(s => !sessionsToday.some(sess => sess.subject === s.name))
+          .map(s => s.name)
+        const msg = notStudied.length
+          ? `Estude ${notStudied[0]} agora — você ainda não estudou essa matéria hoje.`
+          : `Bom ritmo! Continue com a próxima matéria do ciclo.`
+        return reply.code(200).send({
+          recommendation: msg,
+          reasoning: 'Recomendação automática — IA temporariamente indisponível.',
+          isFallback: true,
+        })
       }
 
       let parsed: { recommendation: string; reasoning: string }
       try {
         parsed = parseAIJSON<{ recommendation: string; reasoning: string }>(rawText)
       } catch {
-        return reply.code(500).send({ error: 'AI_PARSE_ERROR', raw: rawText })
+        const { sessionsToday, subjects } = request.body
+        const notStudied = subjects
+          .filter(s => !sessionsToday.some(sess => sess.subject === s.name))
+          .map(s => s.name)
+        return reply.code(200).send({
+          recommendation: notStudied.length
+            ? `Estude ${notStudied[0]} agora — você ainda não estudou essa matéria hoje.`
+            : `Bom ritmo! Continue com a próxima matéria do ciclo.`,
+          reasoning: 'Recomendação automática — IA temporariamente indisponível.',
+          isFallback: true,
+        })
       }
 
       if (!parsed?.recommendation) {
-        return reply.code(500).send({ error: 'AI_PARSE_ERROR', raw: rawText })
+        return reply.code(200).send({
+          recommendation: 'Continue com a próxima matéria do ciclo.',
+          reasoning: 'Recomendação automática — IA temporariamente indisponível.',
+          isFallback: true,
+        })
       }
 
       return reply.code(200).send({
