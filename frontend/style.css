@@ -896,3 +896,8 @@ header {
   align-items: center;
   justify-content: center;
 }
+
+#view-dashboard {
+  background: radial-gradient(ellipse 60% 40% at 40% 20%,
+    rgba(248,113,113,0.06) 0%, transparent 70%) !important;
+}

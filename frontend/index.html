@@ -105,48 +105,55 @@
             </div>
 
             <!-- Timer central com anel -->
-            <div style="position:relative;width:320px;height:320px;
-                        display:flex;align-items:center;justify-content:center;
-                        margin:0 auto">
-              <svg width="320" height="320" viewBox="0 0 320 320"
-                style="transform:rotate(-90deg);position:absolute;top:0;left:0">
-                <defs>
-                  <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#f87171"/>
-                    <stop offset="100%" stop-color="#fb923c"/>
-                  </linearGradient>
-                </defs>
-                <circle cx="160" cy="160" r="152" fill="transparent"
-                  stroke="rgba(248,113,113,0.1)" stroke-width="4"/>
-                <circle id="timer-ring-fill" cx="160" cy="160" r="152"
-                  fill="transparent" stroke="url(#timerGradient)"
-                  stroke-width="4" stroke-linecap="round"
-                  stroke-dasharray="955" stroke-dashoffset="955"
-                  style="opacity:0;transition:stroke-dashoffset 0.5s ease,opacity 0.3s"/>
-              </svg>
-              <svg id="timer-dot-svg" width="320" height="320"
-                viewBox="0 0 320 320"
-                style="position:absolute;top:0;left:0;pointer-events:none">
-                <circle id="timer-ring-dot" cx="160" cy="8" r="6"
-                  fill="#f87171"
-                  style="opacity:0;transition:opacity 0.3s;
-                         filter:drop-shadow(0 0 4px rgba(248,113,113,0.8))"/>
-              </svg>
-              <div class="timer-display-wrap">
-                <div id="timer-display"
-                  style="font-size:80px;font-weight:300;letter-spacing:-4px;
-                         line-height:1;color:var(--text);font-family:var(--sans);
-                         transition:color 0.3s">
-                  00:00
+            <div style="display:flex;align-items:center;
+                        justify-content:center;padding:8px 0">
+              <div style="position:relative;width:320px;height:320px">
+                <svg width="320" height="320" viewBox="0 0 320 320"
+                  style="transform:rotate(-90deg);position:absolute;
+                         top:0;left:0;pointer-events:none">
+                  <defs>
+                    <linearGradient id="timerGradient" x1="0%" y1="0%"
+                      x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#f87171"/>
+                      <stop offset="100%" stop-color="#fb923c"/>
+                    </linearGradient>
+                  </defs>
+                  <circle cx="160" cy="160" r="152" fill="transparent"
+                    stroke="rgba(248,113,113,0.1)" stroke-width="4"/>
+                  <circle id="timer-ring-fill" cx="160" cy="160" r="152"
+                    fill="transparent" stroke="url(#timerGradient)"
+                    stroke-width="4" stroke-linecap="round"
+                    stroke-dasharray="955" stroke-dashoffset="955"
+                    style="opacity:0;transition:stroke-dashoffset 0.5s ease,
+                           opacity 0.3s"/>
+                </svg>
+                <svg id="timer-dot-svg" width="320" height="320"
+                  viewBox="0 0 320 320"
+                  style="position:absolute;top:0;left:0;pointer-events:none">
+                  <circle id="timer-ring-dot" cx="160" cy="8" r="6"
+                    fill="#f87171"
+                    style="opacity:0;transition:opacity 0.3s;
+                           filter:drop-shadow(0 0 4px rgba(248,113,113,0.8))"/>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;
+                            flex-direction:column;align-items:center;
+                            justify-content:center;text-align:center">
+                  <div id="timer-display"
+                    style="font-size:80px;font-weight:300;letter-spacing:-4px;
+                           line-height:1;color:var(--text);font-family:var(--sans);
+                           transition:color 0.3s">
+                    00:00
+                  </div>
+                  <div id="timer-status"
+                    style="font-size:10px;font-family:monospace;letter-spacing:3px;
+                           color:var(--text-dim);margin-top:10px;
+                           text-transform:uppercase">
+                    parado
+                  </div>
+                  <div id="pause-display"
+                    style="font-size:11px;color:var(--text-dim);margin-top:4px;
+                           min-height:16px"></div>
                 </div>
-                <div id="timer-status"
-                  style="font-size:10px;font-family:monospace;letter-spacing:3px;
-                         color:var(--text-dim);margin-top:10px;text-transform:uppercase">
-                  parado
-                </div>
-                <div id="pause-display"
-                  style="font-size:11px;color:var(--text-dim);margin-top:4px;
-                         min-height:16px"></div>
               </div>
             </div>
 
@@ -172,7 +179,7 @@
             <!-- Botões -->
             <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
               <button id="btn-start" onclick="startTimer()"
-                style="width:100%;padding:16px;font-size:15px;font-weight:600;
+                style="width:100%;padding:10px 20px;font-size:13px;font-weight:600;
                        border-radius:12px;background:var(--accent);color:#000;
                        border:none;cursor:pointer;display:flex;align-items:center;
                        justify-content:center;gap:8px;transition:opacity 0.2s">
@@ -183,14 +190,14 @@
               </button>
               <div style="display:flex;gap:8px">
                 <button id="btn-pause" onclick="pauseTimer()" disabled
-                  style="flex:1;padding:10px;font-size:12px;border-radius:8px;
+                  style="flex:1;padding:7px 14px;font-size:11px;border-radius:8px;
                          background:none;border:1px solid var(--surface3);
                          color:var(--text-muted);cursor:pointer;letter-spacing:1px;
                          font-family:monospace;transition:all 0.15s">
                   PAUSAR
                 </button>
                 <button id="btn-finish" onclick="finishSession()" disabled
-                  style="flex:1;padding:10px;font-size:12px;border-radius:8px;
+                  style="flex:1;padding:7px 14px;font-size:11px;border-radius:8px;
                          background:none;border:1px solid var(--red);
                          color:var(--red);cursor:pointer;letter-spacing:1px;
                          font-family:monospace;transition:all 0.15s">
@@ -239,31 +246,41 @@
 
         <div class="dash-right">
           <div class="card" style="padding:16px 20px">
-            <div class="card-label" style="margin-bottom:12px">Próximas matérias</div>
+            <div class="card-label" style="margin-bottom:12px">
+              Próximas matérias
+            </div>
             <div id="next-list"></div>
             <button onclick="showView('subjects')"
-              style="width:100%;margin-top:12px;padding:8px;background:none;border:1px solid var(--surface3);
-                     border-radius:8px;color:var(--text-dim);font-size:11px;cursor:pointer;
+              style="width:100%;margin-top:12px;padding:8px;background:none;
+                     border:1px solid var(--surface3);border-radius:8px;
+                     color:var(--text-dim);font-size:11px;cursor:pointer;
                      font-family:monospace;letter-spacing:1px">
               VER TODAS AS MATÉRIAS →
             </button>
           </div>
-          <div class="card const-dash-card" id="const-dash-section" style="display:none;padding:16px 20px">
-            <div class="card-label" style="margin-bottom:12px">Matérias constantes</div>
-            <div class="const-list" id="const-dash-list"></div>
+          <div class="card const-dash-card" id="const-dash-section"
+            style="display:none;padding:16px 20px">
+            <div class="card-label" style="margin-bottom:12px">
+              Matérias constantes
+            </div>
+            <div id="const-dash-list"></div>
           </div>
-          <div class="card const-dash-card" id="faculty-dash-section" style="display:none;padding:16px 20px">
-            <div class="card-label" style="margin-bottom:12px">Faculdade</div>
-            <div class="const-list" id="faculty-dash-list"></div>
+          <div class="card const-dash-card" id="faculty-dash-section"
+            style="display:none;padding:16px 20px">
+            <div class="card-label" style="margin-bottom:12px">
+              Faculdade
+            </div>
+            <div id="faculty-dash-list"></div>
+          </div>
+          <div class="card" style="padding:16px 20px" id="focus-today-card">
+            <div class="card-label" style="margin-bottom:12px">
+              Foco de hoje
+            </div>
+            <div id="focus-today-content"></div>
           </div>
           <div class="card" style="padding:16px 20px" id="today-card">
             <div class="card-label" style="margin-bottom:8px">Hoje</div>
             <div id="today-list"></div>
-          </div>
-
-          <div class="card" style="padding:16px 20px" id="focus-today-card">
-            <div class="card-label" style="margin-bottom:12px">Foco de hoje</div>
-            <div id="focus-today-content"></div>
           </div>
         </div>
 
