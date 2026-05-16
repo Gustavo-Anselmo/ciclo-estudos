@@ -657,14 +657,14 @@ function toggleFacultyForm() {
 
 function addFacultySubject() {
   const name = (document.getElementById('faculty-name')?.value || '').trim()
-  const examDate = document.getElementById('faculty-date')?.value || ''
-  if (!name || !examDate) { showToast('Preencha nome e data'); return }
+  if (!name) { showToast('Preencha o nome da matéria'); return }
   if (!state.facultySubjects) state.facultySubjects = []
-  if (state.facultySubjects.some(s => s.name === name)) { showToast('Matéria já existe na faculdade'); return }
-  state.facultySubjects.push({ name, examDate })
+  if (state.facultySubjects.some(s => s.name === name)) {
+    showToast('Matéria já existe na faculdade'); return
+  }
+  state.facultySubjects.push({ name })
   save()
   document.getElementById('faculty-name').value = ''
-  document.getElementById('faculty-date').value = ''
   toggleFacultyForm()
   renderFacultySubjects()
 }
@@ -679,33 +679,18 @@ function renderFacultySubjects() {
   const list = document.getElementById('faculty-list')
   if (!list) return
   if (!state.facultySubjects) state.facultySubjects = []
-  const now = new Date()
-  const sorted = state.facultySubjects
-    .map((s, origIdx) => ({ ...s, origIdx }))
-    .sort((a, b) => new Date(a.examDate) - new Date(b.examDate))
-  if (!sorted.length) {
+  if (!state.facultySubjects.length) {
     list.innerHTML = '<div class="const-empty">Nenhuma matéria da faculdade cadastrada.</div>'
     return
   }
-  list.innerHTML = sorted.map(s => {
+  list.innerHTML = state.facultySubjects.map((s, idx) => {
     const c = subjectColor(s.name)
-    const examDateObj = new Date(s.examDate)
-    const daysUntil = Math.ceil((examDateObj - now) / 86400000)
-    const dateStr = examDateObj.toLocaleDateString('pt-BR')
-    let badgeColor, badgeBg
-    if (daysUntil <= 0) { badgeColor = 'var(--red)'; badgeBg = 'var(--red-dim)' }
-    else if (daysUntil <= 7) { badgeColor = 'var(--red)'; badgeBg = 'var(--red-dim)' }
-    else if (daysUntil <= 14) { badgeColor = 'var(--orange)'; badgeBg = 'var(--orange-dim)' }
-    else { badgeColor = 'var(--text-dim)'; badgeBg = 'var(--surface3)' }
-    const daysText = daysUntil > 0 ? `${daysUntil} dias` : daysUntil === 0 ? 'Hoje!' : 'Passou'
     return `<div class="const-manage-item">
       <div class="const-icon" style="background:${c}">${subjectInitial(s.name)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name}</div>
-        <div style="font-size:11px;color:var(--text-dim);font-family:var(--mono)">${dateStr}</div>
       </div>
-      <span style="font-size:10px;font-weight:700;font-family:var(--mono);padding:2px 7px;border-radius:4px;color:${badgeColor};background:${badgeBg};flex-shrink:0">${daysText}</span>
-      <button class="icon-btn del" onclick="removeFacultySubject(${s.origIdx})" title="Remover">×</button>
+      <button class="icon-btn del" onclick="removeFacultySubject(${idx})" title="Remover">×</button>
     </div>`
   }).join('')
 }
