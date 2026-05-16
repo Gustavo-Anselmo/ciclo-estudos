@@ -91,7 +91,8 @@ function save() {
       subjects: normalizedSubjects,
       sessions: normalizedSessions,
       constantSubjects: state.constantSubjects || [],
-      facultySubjects: state.facultySubjects || [],
+      facultySubjects: (state.facultySubjects || []).map(s =>
+        typeof s === 'string' ? s : s.name),
       currentIndex: state.currentIndex || 0
     }
 
@@ -132,13 +133,12 @@ async function initSync() {
     USER_ID = data.userId
     updateUserIdDisplay()
     const remote = data.state
-    if (remote.subjects && remote.subjects.length > 0) {
-      state.subjects = remote.subjects
-      state.sessions = remote.sessions ?? []
-      state.constantSubjects = remote.constantSubjects ?? []
-      state.facultySubjects = remote.facultySubjects ?? []
-      state.currentIndex = remote.currentIndex ?? 0
-    }
+    state.subjects      = remote.subjects      ?? state.subjects
+    state.sessions      = remote.sessions      ?? state.sessions
+    state.constantSubjects = remote.constantSubjects ?? state.constantSubjects
+    state.facultySubjects  = (remote.facultySubjects ?? []).map(s =>
+      typeof s === 'string' ? { name: s } : s)
+    state.currentIndex  = remote.currentIndex  ?? state.currentIndex
     save()
   } catch {
     // Server offline — continue with localStorage
