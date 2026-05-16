@@ -1753,28 +1753,6 @@ async function deleteExam(id) {
   } catch { showToast('Erro ao deletar prova') }
 }
 
-async function registerHitRate(examId, checkpointId) {
-  const input = document.getElementById(`cp-input-${checkpointId}`)
-  if (!input) return
-  const hitRate = parseFloat(input.value)
-  if (isNaN(hitRate) || hitRate < 0 || hitRate > 100) { showToast('Taxa deve ser 0–100'); return }
-  if (!USER_ID) { showToast('Configure seu ID de usuário nas configurações'); return }
-  try {
-    const res = await fetch(`${API_URL}/api/exams/${examId}/checkpoints/${checkpointId}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hitRate }),
-    })
-    if (!res.ok) throw new Error()
-    const updated = await res.json()
-    const exam = planningExams.find(e => e.id === examId)
-    if (exam) {
-      const cp = exam.checkpoints.find(c => c.id === checkpointId)
-      if (cp) { cp.hitRate = updated.hitRate; cp.completed = true }
-      const list = document.getElementById('exams-list')
-      if (list) list.innerHTML = planningExams.map(renderExamCard).join('')
-    }
-  } catch { showToast('Erro ao registrar') }
-}
 
 // ── CARD RENDERERS ────────────────────────────────────────────────────────────
 
@@ -1807,42 +1785,35 @@ function renderExamCard(exam) {
   const examDateObj = new Date(exam.examDate)
   const daysUntil = Math.ceil((examDateObj - now) / 86400000)
   const dateStr = examDateObj.toLocaleDateString('pt-BR')
-  const daysColor = daysUntil < 7 ? 'var(--orange)' : 'var(--text-muted)'
   const daysText = daysUntil > 0 ? `${daysUntil} dias` : daysUntil === 0 ? 'HOJE' : 'PASSOU'
-  const checkpoints = (exam.checkpoints ?? []).map(cp => {
-    const isPast = new Date(cp.scheduledDate) <= now
-    if (cp.completed) {
-      const pct = cp.hitRate ?? 0
-      const col = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--orange)' : 'var(--red)'
-      return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0">
-        <span style="font-size:11px;color:var(--text-dim);min-width:90px">${cp.daysBeforeExam}d antes</span>
-        <span style="font-size:12px;font-weight:600;color:${col}">${pct.toFixed(0)}% de acertos</span>
-      </div>`
-    }
-    if (isPast) {
-      return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:wrap">
-        <span style="font-size:11px;color:var(--text-dim);min-width:90px">${cp.daysBeforeExam}d antes</span>
-        <span style="font-size:10px;font-family:monospace;font-weight:700;color:var(--orange)">HOJE</span>
-        <input id="cp-input-${cp.id}" type="number" min="0" max="100" placeholder="0–100"
-          style="width:60px;background:var(--surface2);border:1px solid var(--surface4);color:var(--text);padding:3px 6px;border-radius:4px;font-size:11px;outline:none">
-        <button onclick="registerHitRate('${exam.id}','${cp.id}')"
-          style="padding:3px 10px;font-size:11px;background:var(--accent);color:#000;border:none;border-radius:4px;cursor:pointer;font-weight:600">Registrar</button>
-      </div>`
-    }
-    return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0">
-      <span style="font-size:11px;color:var(--text-dim);min-width:90px">${cp.daysBeforeExam}d antes</span>
-      <span style="font-size:10px;font-family:monospace;color:var(--text-dim)">PENDENTE</span>
-    </div>`
-  }).join('')
+
+  let barColor, barPct, daysColor
+  if (daysUntil <= 0) {
+    barColor = 'var(--text-dim)'; barPct = 100; daysColor = 'var(--text-dim)'
+  } else if (daysUntil <= 7) {
+    barColor = 'var(--red)'; barPct = 100; daysColor = 'var(--red)'
+  } else if (daysUntil <= 14) {
+    barColor = 'var(--orange)'; barPct = 65; daysColor = 'var(--orange)'
+  } else if (daysUntil <= 30) {
+    barColor = 'var(--orange)'; barPct = 35; daysColor = 'var(--text-muted)'
+  } else {
+    barColor = 'var(--green)'; barPct = 15; daysColor = 'var(--text-muted)'
+  }
+
+  const urgencyBar = daysUntil > 0 ? `
+    <div style="margin-top:10px;height:3px;background:var(--surface4);border-radius:2px;overflow:hidden">
+      <div style="height:100%;width:${barPct}%;background:${barColor};border-radius:2px;transition:width .3s"></div>
+    </div>` : ''
+
   return `<div id="exam-card-${exam.id}" style="background:var(--surface3);border:1px solid var(--surface4);border-radius:8px;padding:14px;margin-bottom:8px">
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:${exam.checkpoints?.length ? '10px' : '0'}">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span style="font-size:13px;font-weight:600;color:var(--text);flex:1">${exam.subjectName}</span>
       <span style="font-size:12px;color:var(--text-muted)">${dateStr}</span>
       <span style="font-size:12px;font-weight:600;color:${daysColor}">${daysText}</span>
       <button onclick="startReview('${exam.id}')" style="background:var(--surface4);border:1px solid var(--surface3);color:var(--text-muted);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer">▶ Revisar</button>
       <button onclick="deleteExam('${exam.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:18px;padding:0;line-height:1" title="Deletar">×</button>
     </div>
-    ${checkpoints}
+    ${urgencyBar}
   </div>`
 }
 
