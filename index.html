@@ -89,40 +89,60 @@
 
         <div class="dash-left">
           <div class="card timer-card" id="timer-card">
+            <!-- Badge Pomodoro -->
+            <div style="display:flex;justify-content:center;min-height:28px;
+                        margin-bottom:4px">
+              <div id="pomo-badge" style="display:none;align-items:center;
+                gap:6px;padding:4px 14px;border-radius:20px;
+                background:color-mix(in srgb,var(--accent) 15%,transparent);
+                border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)">
+                <span style="width:6px;height:6px;border-radius:50%;
+                  background:var(--accent);display:inline-block;
+                  animation:pulse 1.5s infinite"></span>
+                <span style="font-size:9px;font-family:monospace;font-weight:700;
+                  letter-spacing:2px;color:var(--accent)">POMODORO</span>
+              </div>
+            </div>
+
             <!-- Timer central com anel -->
-            <div style="display:flex;align-items:center;justify-content:center;
-                        padding:16px 0 8px">
-              <div style="position:relative;width:260px;height:260px;
+            <div style="display:flex;align-items:center;justify-content:center">
+              <div style="position:relative;width:320px;height:320px;
                           display:flex;align-items:center;justify-content:center">
-                <svg width="260" height="260" viewBox="0 0 260 260"
+                <svg width="320" height="320" viewBox="0 0 320 320"
                   style="position:absolute;top:0;left:0;pointer-events:none">
-                  <circle id="timer-ring-idle" cx="130" cy="130" r="115"
-                    fill="none" stroke="var(--accent)"
-                    stroke-width="1.5" opacity="0.12"/>
-                  <circle id="timer-ring-fill" cx="130" cy="130" r="115"
-                    fill="none" stroke="var(--accent)"
-                    stroke-width="3" stroke-linecap="round"
-                    stroke-dasharray="723" stroke-dashoffset="723"
-                    transform="rotate(-90 130 130)"
+                  <defs>
+                    <linearGradient id="ring-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#f87171"/>
+                      <stop offset="100%" stop-color="#fb923c"/>
+                    </linearGradient>
+                  </defs>
+                  <!-- Anel de fundo -->
+                  <circle cx="160" cy="160" r="140" fill="none"
+                    stroke="color-mix(in srgb,var(--accent) 10%,transparent)"
+                    stroke-width="4"/>
+                  <!-- Anel de progresso -->
+                  <circle id="timer-ring-fill" cx="160" cy="160" r="140"
+                    fill="none" stroke="url(#ring-gradient)"
+                    stroke-width="4" stroke-linecap="round"
+                    stroke-dasharray="879" stroke-dashoffset="879"
+                    transform="rotate(-90 160 160)"
                     style="opacity:0;transition:stroke-dashoffset 0.5s ease,opacity 0.3s"/>
+                  <!-- Dot indicator -->
+                  <circle id="timer-ring-dot" cx="160" cy="20" r="5"
+                    fill="var(--accent)"
+                    style="opacity:0;transition:opacity 0.3s;
+                           filter:drop-shadow(0 0 4px var(--accent))"/>
                 </svg>
                 <div style="text-align:center;position:relative;z-index:1">
-                  <div id="pomo-badge"
-                    style="display:none;font-size:9px;font-family:monospace;
-                           font-weight:700;letter-spacing:1px;padding:3px 10px;
-                           border-radius:20px;background:var(--accent);color:#000;
-                           margin-bottom:8px;display:inline-block">
-                    ● POMODORO
-                  </div>
                   <div id="timer-display"
-                    style="font-size:76px;font-weight:700;letter-spacing:-4px;
+                    style="font-size:80px;font-weight:300;letter-spacing:-4px;
                            line-height:1;color:var(--text);font-family:var(--sans);
                            transition:color 0.3s">
                     00:00
                   </div>
                   <div id="timer-status"
-                    style="font-size:10px;font-family:monospace;letter-spacing:2px;
-                           color:var(--text-dim);margin-top:10px;text-transform:uppercase">
+                    style="font-size:10px;font-family:monospace;letter-spacing:3px;
+                           color:var(--text-dim);margin-top:12px;text-transform:uppercase">
                     parado
                   </div>
                   <div id="pause-display"
@@ -132,17 +152,18 @@
               </div>
             </div>
 
-            <!-- Nome da matéria abaixo do anel -->
-            <div style="text-align:center;padding-bottom:8px">
-              <div class="subject-label" style="margin-bottom:6px">Estudando agora</div>
+            <!-- Nome da matéria abaixo do timer -->
+            <div style="text-align:center;margin-top:4px;margin-bottom:8px">
               <div class="subject-name" id="current-subject-name"
-                style="font-size:22px;text-align:center">—</div>
+                style="font-size:28px;font-weight:600;text-align:center">—</div>
+              <div style="font-size:13px;color:var(--text-muted);margin-top:4px">
+                Sessão de estudo</div>
               <div class="cycle-indicator" id="cycle-indicator"
-                style="justify-content:center;margin-top:8px"></div>
+                style="justify-content:center;margin-top:10px"></div>
             </div>
 
             <!-- Meta diária -->
-            <div class="goal-section" id="goal-section">
+            <div class="goal-section" id="goal-section" style="margin-bottom:4px">
               <div class="goal-bar-meta">
                 <span id="goal-text"></span>
                 <span id="goal-pct"></span>
@@ -151,32 +172,43 @@
             </div>
 
             <!-- Botões -->
-            <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
               <button id="btn-start" onclick="startTimer()"
-                style="width:100%;padding:14px;font-size:14px;font-weight:700;
-                       letter-spacing:1px;border-radius:10px;background:var(--accent);
-                       color:#000;border:none;cursor:pointer;transition:opacity 0.2s">
-                ▶ INICIAR SESSÃO
+                style="width:100%;padding:16px;font-size:15px;font-weight:600;
+                       border-radius:12px;background:var(--accent);color:#000;
+                       border:none;cursor:pointer;display:flex;align-items:center;
+                       justify-content:center;gap:8px;transition:opacity 0.2s">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+                Iniciar sessão
               </button>
               <div style="display:flex;gap:8px">
                 <button id="btn-pause" onclick="pauseTimer()" disabled
                   style="flex:1;padding:10px;font-size:12px;border-radius:8px;
                          background:none;border:1px solid var(--surface3);
                          color:var(--text-muted);cursor:pointer;letter-spacing:1px;
-                         font-family:monospace">PAUSAR</button>
+                         font-family:monospace;transition:all 0.15s">
+                  PAUSAR
+                </button>
                 <button id="btn-finish" onclick="finishSession()" disabled
                   style="flex:1;padding:10px;font-size:12px;border-radius:8px;
                          background:none;border:1px solid var(--red);
                          color:var(--red);cursor:pointer;letter-spacing:1px;
-                         font-family:monospace">FINALIZAR</button>
+                         font-family:monospace;transition:all 0.15s">
+                  FINALIZAR
+                </button>
               </div>
             </div>
 
             <!-- Pomodoro colapsável -->
-            <div style="border-top:1px solid var(--surface3);padding-top:12px">
+            <div style="border-top:1px solid var(--surface3);padding-top:12px;
+                        margin-top:4px">
               <div style="display:flex;align-items:center;justify-content:space-between">
-                <span style="font-size:10px;font-family:monospace;color:var(--text-dim);
-                             letter-spacing:1px">MODO POMODORO</span>
+                <span style="font-size:10px;font-family:monospace;
+                             color:var(--text-dim);letter-spacing:1px">
+                  MODO POMODORO
+                </span>
                 <label class="toggle-switch">
                   <input type="checkbox" id="pomo-toggle" onchange="onPomoToggle()">
                   <span class="toggle-knob"></span>
@@ -184,10 +216,13 @@
               </div>
               <div id="pomo-config" style="display:none;margin-top:10px">
                 <div class="pomo-field"><label>Foco (min)</label>
-                  <input type="number" id="pomo-focus" value="25" min="1" max="120"></div>
+                  <input type="number" id="pomo-focus" value="25" min="1" max="120">
+                </div>
                 <div class="pomo-field"><label>Pausa (min)</label>
-                  <input type="number" id="pomo-break" value="5" min="1" max="60"></div>
-                <span id="pomo-phase-badge" class="pomo-phase-badge pomo-phase-focus">Foco</span>
+                  <input type="number" id="pomo-break" value="5" min="1" max="60">
+                </div>
+                <span id="pomo-phase-badge"
+                  class="pomo-phase-badge pomo-phase-focus">Foco</span>
               </div>
               <div class="pomo-block-bar" id="pomo-block-bar" style="margin-top:8px">
                 <div class="pomo-block-bar-fill" id="pomo-bar-fill"></div>

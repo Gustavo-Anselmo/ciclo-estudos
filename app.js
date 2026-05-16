@@ -180,7 +180,7 @@ function onPomoToggle() {
     if (!timerRunning && timerSeconds === 0) { pomoPhase = 'focus'; pomoSecondsLeft = 0; pomoFocusSecs = 0; }
   }
   const badge = document.getElementById('pomo-badge')
-  if (badge) badge.style.display = pomoActive ? 'inline-block' : 'none'
+  if (badge) badge.style.display = pomoActive ? 'flex' : 'none'
   const cfg = document.getElementById('pomo-config')
   if (cfg) cfg.style.display = pomoActive ? 'block' : 'none'
 }
@@ -378,36 +378,43 @@ function updateTimerDisplay() {
 
 function updateTimerRing() {
   const ring = document.getElementById('timer-ring-fill')
-  const idle = document.getElementById('timer-ring-idle')
+  const dot  = document.getElementById('timer-ring-dot')
   if (!ring) return
 
-  const circ = 2 * Math.PI * 115
+  const r    = 140
+  const circ = 2 * Math.PI * r
 
-  // Sem Pomodoro: mostra só anel decorativo, sem progresso
-  if (!pomoActive) {
-    ring.style.opacity = '0'
-    ring.setAttribute('stroke-dashoffset', String(circ))
-    if (idle) idle.style.opacity = timerRunning ? '0.3' : '0.12'
-    return
-  }
-
-  // Com Pomodoro: mostra progresso da sessão atual
   if (!timerRunning && timerSeconds === 0) {
     ring.style.opacity = '0'
+    if (dot) dot.style.opacity = '0'
     ring.setAttribute('stroke-dashoffset', String(circ))
-    if (idle) idle.style.opacity = '0.12'
     return
   }
 
-  const total   = pomoFocusSecs > 0 ? pomoFocusSecs : 1
-  const elapsed = pomoSecondsLeft > 0 ? total - pomoSecondsLeft : total
-  const pct     = Math.min(1, elapsed / total)
+  let pct = 0
+  if (pomoActive && pomoFocusSecs > 0) {
+    const elapsed = pomoSecondsLeft > 0
+      ? pomoFocusSecs - pomoSecondsLeft
+      : pomoFocusSecs
+    pct = Math.min(1, elapsed / pomoFocusSecs)
+  } else if (timerRunning) {
+    pct = 0.15
+  }
 
   ring.setAttribute('stroke-dasharray', String(circ))
   ring.setAttribute('stroke-dashoffset', String(circ * (1 - pct)))
-  ring.style.opacity = '1'
-  ring.style.stroke  = 'var(--accent)'
-  if (idle) idle.style.opacity = '0'
+  ring.style.opacity = pct > 0 ? '1' : '0.3'
+
+  if (dot && pct > 0) {
+    const angle = pct * 2 * Math.PI - Math.PI / 2
+    const cx = 160 + r * Math.cos(angle)
+    const cy = 160 + r * Math.sin(angle)
+    dot.setAttribute('cx', String(cx))
+    dot.setAttribute('cy', String(cy))
+    dot.style.opacity = '1'
+  } else if (dot) {
+    dot.style.opacity = '0'
+  }
 }
 
 function updatePauseDisplay() {
