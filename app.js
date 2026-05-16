@@ -702,15 +702,14 @@ function renderDashboard() {
     for (let i = 1; i <= 5; i++)
       nexts.push({ name: sName(state.subjects[(state.currentIndex + i) % state.subjects.length]), offset: i })
     nextList.innerHTML = nexts.map((n, i) => {
-      const c = subjectColor(n.name)
       const isFirst = i === 0
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;
                 border-radius:10px;margin-bottom:4px;cursor:pointer;
-                background:${isFirst ? 'color-mix(in srgb,'+c+' 15%,transparent)' : 'transparent'};
-                border:1px solid ${isFirst ? 'color-mix(in srgb,'+c+' 30%,transparent)' : 'transparent'};
+                background:${isFirst ? 'color-mix(in srgb,var(--accent) 15%,transparent)' : 'transparent'};
+                border:1px solid ${isFirst ? 'color-mix(in srgb,var(--accent) 30%,transparent)' : 'transparent'};
                 transition:background 0.2s"
               onclick="state.currentIndex=(state.currentIndex+${n.offset})%state.subjects.length;save();renderDashboard()">
-        <div style="width:26px;height:26px;border-radius:50%;background:${c};
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--accent);
                     display:flex;align-items:center;justify-content:center;
                     font-size:11px;font-weight:700;color:#000;flex-shrink:0">
           ${n.offset}
@@ -751,20 +750,43 @@ function renderDashboard() {
 
 // ── CONSTANT SUBJECTS ──
 function renderConstantDashboard() {
-  const section = document.getElementById('const-dash-section');
-  if (!section) return;
-  if (!state.constantSubjects || !state.constantSubjects.length) { section.style.display = 'none'; return; }
-  section.style.display = 'block';
-  document.getElementById('const-dash-list').innerHTML = state.constantSubjects.map(name => {
-    const isActive = studyingConstant === name;
-    const c = subjectColor(name);
-    const safe = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    return `<div class="const-item${isActive?' const-active':''}" onclick="selectConstantSubject('${safe}')">
-      <div class="const-badge" style="background:${c}">${subjectInitial(name)}</div>
-      <span class="const-name">${name}</span>
-      ${isActive ? '<span class="const-pill">selecionada</span>' : ''}
-    </div>`;
-  }).join('');
+  const section = document.getElementById('const-dash-section')
+  if (!section) return
+  if (!state.constantSubjects || !state.constantSubjects.length) {
+    section.style.display = 'none'; return
+  }
+  section.style.display = 'block'
+  document.getElementById('const-dash-list').innerHTML =
+    state.constantSubjects.map(name => {
+      const isActive = studyingConstant === name
+      const safe = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")
+      return `<div onclick="selectConstantSubject('${safe}')"
+        style="display:flex;align-items:center;gap:10px;padding:8px 10px;
+               border-radius:10px;margin-bottom:4px;cursor:pointer;
+               background:${isActive
+                 ? 'color-mix(in srgb,var(--accent) 15%,transparent)'
+                 : 'transparent'};
+               border:1px solid ${isActive
+                 ? 'color-mix(in srgb,var(--accent) 30%,transparent)'
+                 : 'transparent'};
+               transition:background 0.2s">
+        <div style="width:26px;height:26px;border-radius:50%;
+                    background:var(--accent);display:flex;
+                    align-items:center;justify-content:center;
+                    font-size:11px;font-weight:700;color:#000;flex-shrink:0">
+          ${subjectInitial(name)}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;
+                      white-space:nowrap;
+                      color:${isActive ? 'var(--text)' : 'var(--text-muted)'};
+                      font-weight:${isActive ? '600' : '400'}">
+            ${name}
+          </div>
+        </div>
+        ${isActive ? '<span style="font-size:9px;font-family:monospace;color:var(--accent);letter-spacing:1px">ATIVA</span>' : ''}
+      </div>`
+    }).join('')
 }
 
 function renderFacultyDashboard() {
@@ -778,13 +800,32 @@ function renderFacultyDashboard() {
     state.facultySubjects.map(s => {
       const name = s.name
       const isActive = studyingConstant === name
-      const c = subjectColor(name)
       const safe = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")
-      return `<div class="const-item${isActive ? ' const-active' : ''}"
-        onclick="selectConstantSubject('${safe}')">
-        <div class="const-badge" style="background:${c}">${subjectInitial(name)}</div>
-        <span class="const-name">${name}</span>
-        ${isActive ? '<span class="const-pill">selecionada</span>' : ''}
+      return `<div onclick="selectConstantSubject('${safe}')"
+        style="display:flex;align-items:center;gap:10px;padding:8px 10px;
+               border-radius:10px;margin-bottom:4px;cursor:pointer;
+               background:${isActive
+                 ? 'color-mix(in srgb,var(--accent) 15%,transparent)'
+                 : 'transparent'};
+               border:1px solid ${isActive
+                 ? 'color-mix(in srgb,var(--accent) 30%,transparent)'
+                 : 'transparent'};
+               transition:background 0.2s">
+        <div style="width:26px;height:26px;border-radius:50%;
+                    background:var(--accent);display:flex;
+                    align-items:center;justify-content:center;
+                    font-size:11px;font-weight:700;color:#000;flex-shrink:0">
+          ${subjectInitial(name)}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;
+                      white-space:nowrap;
+                      color:${isActive ? 'var(--text)' : 'var(--text-muted)'};
+                      font-weight:${isActive ? '600' : '400'}">
+            ${name}
+          </div>
+        </div>
+        ${isActive ? '<span style="font-size:9px;font-family:monospace;color:var(--accent);letter-spacing:1px">ATIVA</span>' : ''}
       </div>`
     }).join('')
 }
