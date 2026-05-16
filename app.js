@@ -208,7 +208,7 @@ function onPomoFocusEnd() {
   clearInterval(timerInterval); timerInterval = null;
   timerRunning = false;
   playBeep(); doVibrate([200, 100, 200]);
-  showToast('Bloco concluído! Pausa de ' + Math.round(getPomoBreakSecs() / 60) + ' min');
+  showToast('Bloco concluído! Pausa de ' + Math.round(getPomoBreakSecs() / 60) + ' min', 'info');
 
   pomoPhase = 'break';
   pomoSecondsLeft = getPomoBreakSecs();
@@ -230,7 +230,7 @@ function onPomoFocusEnd() {
     if (pomoSecondsLeft <= 0) {
       clearInterval(pomoBreakInterval); pomoBreakInterval = null;
       playBeep(); doVibrate([200]);
-      showToast('Hora de voltar!');
+      showToast('Hora de voltar!', 'info');
       pomoPhase = 'focus';
       pomoSecondsLeft = getPomoFocusSecs();
       updatePomoBadge(); updatePomoBar();
@@ -244,7 +244,7 @@ function onPomoFocusEnd() {
 
 // ── TIMER ──
 function startTimer() {
-  if (!studyingConstant && !state.subjects.length) { showToast('Adicione matérias primeiro'); showView('subjects'); return; }
+  if (!studyingConstant && !state.subjects.length) { showToast('Adicione matérias primeiro', 'info'); showView('subjects'); return; }
   if (pauseInterval) { clearInterval(pauseInterval); pauseInterval = null; }
   sessionStart = sessionStart || new Date().toISOString();
 
@@ -297,7 +297,7 @@ function finishSession() {
   const subjectName = studyingConstant !== null ? studyingConstant : sName(state.subjects[state.currentIndex]);
   const isConstant  = studyingConstant !== null;
   const duration    = (pomoActive && pomoFocusSecs > 0) ? pomoFocusSecs : timerSeconds;
-  if (duration === 0) { showToast('Tempo insuficiente para registrar'); return; }
+  if (duration === 0) { showToast('Tempo insuficiente para registrar', 'info'); return; }
 
   const pauseInfo  = pauseSeconds > 0 ? ` e <strong>${formatShort(pauseSeconds)}</strong> de pausa` : '';
   const advanceInfo = isConstant ? '' : ' e avançar para a próxima matéria';
@@ -340,7 +340,7 @@ function finishSession() {
       }
 
       playBeep(); doVibrate([200, 100, 200]);
-      showToast(`${subjectName} — ${formatTime(duration)} registrado`);
+      showToast(`${subjectName} — ${formatTime(duration)} registrado`, 'success');
 
       timerSeconds = 0; pauseSeconds = 0; sessionStart = null;
       pomoFocusSecs = 0; pomoPhase = 'focus'; pomoSecondsLeft = 0;
@@ -633,7 +633,7 @@ function renderFacultyDashboard() {
 }
 
 function selectConstantSubject(name) {
-  if (timerRunning || timerSeconds > 0) { showToast('Pare o timer atual primeiro'); return; }
+  if (timerRunning || timerSeconds > 0) { showToast('Pare o timer atual primeiro', 'info'); return; }
   studyingConstant = (studyingConstant === name) ? null : name;
   const nameEl = document.getElementById('current-subject-name');
   if (nameEl) {
@@ -648,7 +648,7 @@ function addConstantSubject() {
   const name  = input.value.trim();
   if (!name) return;
   if (!state.constantSubjects) state.constantSubjects = [];
-  if (state.constantSubjects.includes(name)) { showToast('Matéria já existe nas constantes'); return; }
+  if (state.constantSubjects.includes(name)) { showToast('Matéria já existe nas constantes', 'error'); return; }
   state.constantSubjects.push(name);
   save(); input.value = '';
   renderConstantManage(); renderConstantDashboard(); renderFacultyDashboard();
@@ -662,7 +662,7 @@ function removeConstantSubject(idx) {
       state.constantSubjects.splice(idx, 1);
       if (studyingConstant === name) studyingConstant = null;
       save(); renderConstantManage(); renderConstantDashboard(); renderFacultyDashboard();
-      showToast(`"${name}" removida`);
+      showToast(`"${name}" removida`, 'success');
     }
   });
 }
@@ -686,10 +686,10 @@ function renderConstantManage() {
 // ── FACULTY SUBJECTS ──
 function addFacultySubject() {
   const name = (document.getElementById('faculty-name')?.value || '').trim()
-  if (!name) { showToast('Preencha o nome da matéria'); return }
+  if (!name) { showToast('Preencha o nome da matéria', 'error'); return }
   if (!state.facultySubjects) state.facultySubjects = []
   if (state.facultySubjects.some(s => s.name === name)) {
-    showToast('Matéria já existe na faculdade'); return
+    showToast('Matéria já existe na faculdade', 'error'); return
   }
   state.facultySubjects.push({ name })
   save()
@@ -728,14 +728,14 @@ function addSubject() {
   const input = document.getElementById('subject-input');
   const name  = input.value.trim();
   if (!name) return;
-  if (state.subjects.some(s => sName(s) === name)) { showToast('Matéria já existe no ciclo'); return; }
+  if (state.subjects.some(s => sName(s) === name)) { showToast('Matéria já existe no ciclo', 'error'); return; }
   state.subjects.push({ name, dailyGoal: 0 });
   save(); input.value = '';
   renderSubjects(); renderDashboard();
 }
 
 function removeSubject(idx) {
-  if (state.subjects.length === 1) { showToast('Deve ter ao menos uma matéria'); return; }
+  if (state.subjects.length === 1) { showToast('Deve ter ao menos uma matéria', 'error'); return; }
   const name = sName(state.subjects[idx]);
   showModal({
     icon: '🗑️', title: 'Remover matéria',
@@ -746,7 +746,7 @@ function removeSubject(idx) {
       if (idx < state.currentIndex) state.currentIndex--;
       if (state.currentIndex >= state.subjects.length) state.currentIndex = 0;
       save(); renderSubjects(); renderDashboard();
-      showToast(`"${name}" removida`);
+      showToast(`"${name}" removida`, 'success');
     }
   });
 }
@@ -781,12 +781,12 @@ function editSubject(idx) {
     if (done) return; done = true;
     const newName = inp.value.trim();
     if (!newName || newName === currentName) { renderSubjects(); return; }
-    if (state.subjects.some(s => sName(s) === newName)) { showToast('Matéria já existe'); renderSubjects(); return; }
+    if (state.subjects.some(s => sName(s) === newName)) { showToast('Matéria já existe', 'error'); renderSubjects(); return; }
     state.sessions.forEach(s => { if (s.subject === currentName) s.subject = newName; });
     if (typeof state.subjects[idx] === 'string') state.subjects[idx] = { name: newName, dailyGoal: 0 };
     else state.subjects[idx].name = newName;
     save(); renderSubjects(); renderDashboard();
-    showToast('Matéria renomeada');
+    showToast('Matéria renomeada', 'success');
   };
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') apply(); if (e.key === 'Escape') { done = true; renderSubjects(); } });
   inp.addEventListener('blur', apply);
@@ -1139,7 +1139,7 @@ function toggleSession(id) { document.getElementById(id)?.classList.toggle('open
 
 // ── RESUME SUBJECT ──
 function resumeSubject(subjectName) {
-  if (timerRunning || timerSeconds > 0) { showToast('Pare o timer atual primeiro'); return; }
+  if (timerRunning || timerSeconds > 0) { showToast('Pare o timer atual primeiro', 'info'); return; }
   if (state.constantSubjects.includes(subjectName)) {
     studyingConstant = subjectName;
     showView('dashboard');
@@ -1191,14 +1191,14 @@ function saveSessionEdit(sessIdx) {
   const newDur  = parseInt(document.getElementById(`hed-dur-${sessIdx}`)?.value) || 0;
   const newStartStr = document.getElementById(`hed-start-${sessIdx}`)?.value.trim();
   const newEndStr   = document.getElementById(`hed-end-${sessIdx}`)?.value.trim();
-  if (!newSubj || newDur < 1) { showToast('Dados inválidos'); return; }
+  if (!newSubj || newDur < 1) { showToast('Dados inválidos', 'error'); return; }
   s.subject  = newSubj;
   s.duration = newDur * 60;
   const refDate = new Date(s.end).toDateString();
   if (/^\d{2}:\d{2}$/.test(newStartStr)) s.start = new Date(refDate + ' ' + newStartStr).toISOString();
   if (/^\d{2}:\d{2}$/.test(newEndStr))   s.end   = new Date(refDate + ' ' + newEndStr).toISOString();
   save(); renderHistory(); renderDashboard();
-  showToast('Sessão editada');
+  showToast('Sessão editada', 'success');
 }
 
 function deleteSession(sessIdx) {
@@ -1208,7 +1208,7 @@ function deleteSession(sessIdx) {
     icon: '🗑️', title: 'Excluir sessão',
     desc: `Excluir sessão de <strong>${s.subject}</strong> (${formatShort(s.duration)})?`,
     confirmLabel: 'Excluir',
-    onConfirm: () => { state.sessions.splice(sessIdx,1); save(); renderHistory(); renderDashboard(); showToast('Sessão excluída'); }
+    onConfirm: () => { state.sessions.splice(sessIdx,1); save(); renderHistory(); renderDashboard(); showToast('Sessão excluída', 'success'); }
   });
 }
 
@@ -1232,14 +1232,14 @@ function renderHistSubjects() {
 function clearHistory() {
   if (!state.sessions.length) return;
   showModal({ icon:'🗑️', title:'Limpar histórico', desc:`Isso vai apagar <strong>${state.sessions.length} sessão(ões)</strong> permanentemente. Tem certeza?`, confirmLabel:'Limpar tudo',
-    onConfirm: () => { state.sessions=[]; save(); renderHistory(); renderDashboard(); showToast('Histórico limpo'); }
+    onConfirm: () => { state.sessions=[]; save(); renderHistory(); renderDashboard(); showToast('Histórico limpo', 'success'); }
   });
 }
 
 // ── EXPORT CSV ──
 function exportCSV() {
   const sessions = getFilteredSessions();
-  if (!sessions.length) { showToast('Nenhuma sessão para exportar'); return; }
+  if (!sessions.length) { showToast('Nenhuma sessão para exportar', 'info'); return; }
   const fmtDate = iso => {
     if (!iso) return '';
     const d = new Date(iso);
@@ -1259,7 +1259,7 @@ function exportCSV() {
   a.href = url; a.download = `ciclo-estudos-${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
-  showToast(`${sessions.length} sessões exportadas`);
+  showToast(`${sessions.length} sessões exportadas`, 'success');
 }
 
 // ── AI RECOMMENDATION ──
@@ -1381,9 +1381,9 @@ function updateUserIdDisplay() {
 }
 
 function copyUserId() {
-  if (!USER_ID) { showToast('Nenhum ID disponível'); return; }
+  if (!USER_ID) { showToast('Nenhum ID disponível', 'error'); return; }
   navigator.clipboard.writeText(USER_ID)
-    .then(() => showToast('ID copiado!'))
+    .then(() => showToast('ID copiado!', 'success'))
     .catch(() => {
       const el = document.createElement('textarea')
       el.value = USER_ID
@@ -1391,21 +1391,21 @@ function copyUserId() {
       el.select()
       document.execCommand('copy')
       document.body.removeChild(el)
-      showToast('ID copiado!')
+      showToast('ID copiado!', 'success')
     })
 }
 
 function applyUserId() {
   const input = document.getElementById('sync-id-input')
   const novoId = input.value.trim()
-  if (!novoId) { showToast('Cole um ID válido'); return; }
+  if (!novoId) { showToast('Cole um ID válido', 'error'); return; }
   localStorage.setItem('ciclo-user-id', novoId)
   USER_ID = novoId
   input.value = ''
   initSync().then(() => {
     updateUserIdDisplay()
     renderDashboard()
-    showToast('Dispositivo sincronizado!')
+    showToast('Dispositivo sincronizado!', 'success')
   })
 }
 
@@ -1413,7 +1413,7 @@ function applyUserId() {
 function onCalIconClick() {
   const btn = document.getElementById('cal-icon-btn')
   if (btn && btn.classList.contains('cal-connected')) {
-    showToast('Google Calendar conectado ✓')
+    showToast('Google Calendar conectado ✓', 'success')
   } else {
     window.open(`${API_URL}/auth/google`, '_blank')
   }
@@ -1632,7 +1632,7 @@ async function createTask() {
   const subjectName = document.getElementById('task-subject-select')?.value || ''
   const raw = document.getElementById('task-topics-textarea')?.value || ''
   const topics = raw.split('\n').map(t => t.trim()).filter(Boolean)
-  if (!title) { showToast('Preencha o título da tarefa'); return }
+  if (!title) { showToast('Preencha o título da tarefa', 'error'); return }
   try {
     const res = await fetch(`${API_URL}/api/tasks`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1644,7 +1644,7 @@ async function createTask() {
     const list = document.getElementById('tasks-list')
     if (list) list.innerHTML = planningTasks.map(renderTaskCard).join('')
     toggleTaskForm()
-  } catch { showToast('Erro ao criar tarefa') }
+  } catch { showToast('Erro ao criar tarefa', 'error') }
 }
 
 async function deleteTask(id) {
@@ -1655,7 +1655,7 @@ async function deleteTask(id) {
     const list = document.getElementById('tasks-list')
     if (list && !list.querySelector('[id^="task-card-"]'))
       list.innerHTML = `<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma tarefa cadastrada</div>`
-  } catch { showToast('Erro ao deletar tarefa') }
+  } catch { showToast('Erro ao deletar tarefa', 'error') }
 }
 
 async function cycleTopicState(taskId, topicId) {
@@ -1685,7 +1685,7 @@ async function cycleTopicState(taskId, topicId) {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ state: next }),
     })
-  } catch { showToast('Erro ao salvar') }
+  } catch { showToast('Erro ao salvar', 'error') }
 }
 
 function startReview(examId) {
@@ -1728,7 +1728,7 @@ async function createExam() {
   const subjectName = (document.getElementById('exam-new-subject')?.value || '').trim()
   const examDateInput = document.getElementById('exam-new-date')?.value || ''
   const notes = (document.getElementById('exam-new-notes')?.value || '').trim() || undefined
-  if (!subjectName || !examDateInput) { showToast('Preencha matéria e data'); return }
+  if (!subjectName || !examDateInput) { showToast('Preencha matéria e data', 'error'); return }
   const examDate = new Date(examDateInput).toISOString()
 
   async function doPost() {
@@ -1749,12 +1749,12 @@ async function createExam() {
         USER_ID = null
         localStorage.removeItem('ciclo-user-id')
         await initSync()
-        if (!USER_ID) { showToast('Sem conexão com o servidor'); return }
+        if (!USER_ID) { showToast('Sem conexão com o servidor', 'error'); return }
         res = await doPost()
       }
     }
 
-    if (!res.ok) { showToast('Erro ao criar prova'); return }
+    if (!res.ok) { showToast('Erro ao criar prova', 'error'); return }
 
     const exam = await res.json()
     planningExams.push(exam)
@@ -1762,14 +1762,14 @@ async function createExam() {
     const list = document.getElementById('exams-list')
     if (list) list.innerHTML = planningExams.map(renderExamCard).join('')
     toggleExamForm()
-    showToast('Prova adicionada')
+    showToast('Prova adicionada', 'success')
   } catch {
-    showToast('Erro ao criar prova')
+    showToast('Erro ao criar prova', 'error')
   }
 }
 
 async function deleteExam(id) {
-  if (!USER_ID) { showToast('Configure seu ID de usuário nas configurações'); return }
+  if (!USER_ID) { showToast('Configure seu ID de usuário nas configurações', 'info'); return }
   try {
     await fetch(`${API_URL}/api/exams/${id}`, { method: 'DELETE' })
     planningExams = planningExams.filter(e => e.id !== id)
@@ -1777,7 +1777,7 @@ async function deleteExam(id) {
     const list = document.getElementById('exams-list')
     if (list && !list.querySelector('[id^="exam-card-"]'))
       list.innerHTML = `<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px 0">Nenhuma prova cadastrada</div>`
-  } catch { showToast('Erro ao deletar prova') }
+  } catch { showToast('Erro ao deletar prova', 'error') }
 }
 
 
@@ -1947,7 +1947,7 @@ async function loadPlanning() {
     if (eRes.ok) planningExams = await eRes.json()
   } catch (e) {
     if (e.message === 'TIMEOUT') {
-      showToast('Servidor demorando — exibindo dados locais')
+      showToast('Servidor demorando — exibindo dados locais', 'info')
     }
   }
   renderPlanning()
@@ -2149,10 +2149,13 @@ document.addEventListener('keydown', e => {
 });
 
 // ── TOAST ──
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.className = 'toast' + (type ? ' toast-' + type : '')
+  el.classList.add('show')
+  clearTimeout(el._hideTimer)
+  el._hideTimer = setTimeout(() => el.classList.remove('show'), 2500)
 }
 
 // ── MODAL ──
