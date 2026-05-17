@@ -205,6 +205,15 @@ function onPomoToggle() {
   const cfg = document.getElementById('pomo-config')
   if (cfg) cfg.style.display = pomoActive ? 'block' : 'none'
 }
+function onFocoToggle() {
+  const hidden = document.getElementById('foco-toggle').checked
+  const display = document.getElementById('timer-display')
+  if (display) {
+    display.style.opacity = hidden ? '0' : '1'
+    display.style.transition = 'opacity 0.4s ease'
+  }
+}
+
 function getPomoFocusSecs() { return (parseInt(document.getElementById('pomo-focus')?.value) || 25) * 60; }
 function getPomoBreakSecs() { return (parseInt(document.getElementById('pomo-break')?.value) || 5) * 60; }
 
