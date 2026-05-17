@@ -398,10 +398,23 @@ function updateTimerDisplay() {
   const m = Math.floor((secs % 3600) / 60)
   const s = secs % 60
   const pad = n => String(n).padStart(2, '0')
+
+  const timeStr = h > 0
+    ? `${pad(h)}:${pad(m)}:${pad(s)}`
+    : `${pad(m)}:${pad(s)}`
+
   const el = document.getElementById('timer-display')
-  if (el) {
-    el.textContent = h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
-  }
+  if (!el) return
+
+  const digit = d => `<span style="display:inline-block;width:0.6em;
+    text-align:center">${d}</span>`
+  const sep = c => `<span style="display:inline-block;width:0.25em;
+    text-align:center;opacity:0.6">${c}</span>`
+
+  el.innerHTML = timeStr.split('').map(c =>
+    c === ':' ? sep(c) : digit(c)
+  ).join('')
+
   updateTimerRing()
 }
 
